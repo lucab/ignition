@@ -89,6 +89,31 @@ type LinkEmbedded1 struct {
 	Target string `json:"target,omitempty"`
 }
 
+type Luks struct {
+	Devices []LuksDevice `json:"devices,omitempty"`
+}
+
+type LuksDevice struct {
+	Name     string        `json:"name"`
+	Device   string        `json:"device"`
+	KeySlots []LuksKeySlot `json:"keyslots"`
+}
+
+type LuksKeySlot struct {
+	//	AzureVault *LuksKeyAzureVault `json:"azureVault,omitempty"`
+	//	HcVault *LuksKeyHcVault `json:"hcVault,omitempty"`
+	Interactive *LuksKeyInteractive `json:"interactive,omitempty"`
+	Content     *LuksKeyContent     `json:"content,omitempty"`
+}
+
+type LuksKeyContent struct {
+	Source       string       `json:"source,omitempty"`
+	Verification Verification `json:"verification,omitempty"`
+}
+
+type LuksKeyInteractive struct {
+}
+
 type Mount struct {
 	Create         *Create       `json:"create,omitempty"`
 	Device         string        `json:"device,omitempty"`
@@ -180,6 +205,7 @@ type Storage struct {
 	Files       []File       `json:"files,omitempty"`
 	Filesystems []Filesystem `json:"filesystems,omitempty"`
 	Links       []Link       `json:"links,omitempty"`
+	Luks        []Luks       `json:"luks,omitempty"`
 	Raid        []Raid       `json:"raid,omitempty"`
 }
 
