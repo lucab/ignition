@@ -91,6 +91,11 @@ func (s stage) Run(config types.Config) bool {
 		return false
 	}
 
+	if err := s.createLuks(config); err != nil {
+		s.Logger.Crit("failed to create raids: %v", err)
+		return false
+	}
+
 	if err := s.createFilesystems(config); err != nil {
 		s.Logger.Crit("failed to create filesystems: %v", err)
 		return false
