@@ -236,8 +236,28 @@
             "device": {
               "type": "string"
             },
-            "names": {
-              "type": "boolean"
+            "name": {
+              "type": "string"
+            },
+            "keyslots": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/storage/definitions/luksKeyslot"
+              }
+            }
+          }
+        },
+        "luksKeyslot": {
+          "type": "object",
+          "properties": {
+            "azureVault": {
+                "type": ["string", "null"]
+            },
+            "content": {
+                "type": ["string", "null"]
+            },
+            "hcVault": {
+                "type": ["string", "null"]
             }
           }
         },

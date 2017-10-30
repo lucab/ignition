@@ -90,28 +90,15 @@ type LinkEmbedded1 struct {
 }
 
 type Luks struct {
-	Devices []LuksDevice `json:"devices,omitempty"`
+	Device   string        `json:"device,omitempty"`
+	Keyslots []LuksKeyslot `json:"keyslots,omitempty"`
+	Name     string        `json:"name,omitempty"`
 }
 
-type LuksDevice struct {
-	Name     string        `json:"name"`
-	Device   string        `json:"device"`
-	KeySlots []LuksKeySlot `json:"keyslots"`
-}
-
-type LuksKeySlot struct {
-	//	AzureVault *LuksKeyAzureVault `json:"azureVault,omitempty"`
-	//	HcVault *LuksKeyHcVault `json:"hcVault,omitempty"`
-	Interactive *LuksKeyInteractive `json:"interactive,omitempty"`
-	Content     *LuksKeyContent     `json:"content,omitempty"`
-}
-
-type LuksKeyContent struct {
-	Source       string       `json:"source,omitempty"`
-	Verification Verification `json:"verification,omitempty"`
-}
-
-type LuksKeyInteractive struct {
+type LuksKeyslot struct {
+	AzureVault *string `json:"azureVault,omitempty"`
+	Content    *string `json:"content,omitempty"`
+	HcVault    *string `json:"hcVault,omitempty"`
 }
 
 type Mount struct {
