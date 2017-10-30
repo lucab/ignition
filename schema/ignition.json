@@ -119,6 +119,12 @@
           "items": {
             "$ref": "#/definitions/storage/definitions/link"
           }
+        },
+        "luks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/storage/definitions/luks"
+          }
         }
       },
       "definitions": {
@@ -223,6 +229,17 @@
               }
             }
           ]
+        },
+        "luks": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": "string"
+            },
+            "names": {
+              "type": "boolean"
+            }
+          }
         },
         "partition": {
           "type": "object",
