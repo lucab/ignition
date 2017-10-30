@@ -21,21 +21,21 @@ import (
 	"github.com/coreos/ignition/config/validate/report"
 )
 
-func TestLuksDeviceValidate(t *testing.T) {
+func TestLuksValidate(t *testing.T) {
 	tests := []struct {
-		in  LuksDevice
+		in  Luks
 		out error
 	}{
 		{
-			in:  LuksDevice{Name: "foo", Device: "/dev/bar", KeySlots: []LuksKeySlot{{Interactive: &LuksKeyInteractive{}}}},
+			in:  Luks{Name: "foo", Device: "/dev/bar", Keyslots: []LuksKeyslot{}},
 			out: nil,
 		},
 		{
-			in:  LuksDevice{Name: "", Device: "/dev/bar", KeySlots: []LuksKeySlot{{Interactive: &LuksKeyInteractive{}}}},
+			in:  Luks{Name: "", Device: "/dev/bar", Keyslots: []LuksKeyslot{}},
 			out: ErrNoDevmapperName,
 		},
 		{
-			in:  LuksDevice{Name: "foo", Device: "", KeySlots: []LuksKeySlot{{Interactive: &LuksKeyInteractive{}}}},
+			in:  Luks{Name: "foo", Device: "", Keyslots: []LuksKeyslot{}},
 			out: ErrNoDevicePath,
 		},
 	}

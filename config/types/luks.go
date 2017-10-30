@@ -24,27 +24,27 @@ import (
 const (
 	// luksDevicesMax is the maximum number of LUKS devices that can be created at once
 	luksDevicesMax = 1000
-	// luksKeySlotsMax is the maximux number of keyslots allowed per LUKS device
-	luksKeySlotsMax = 8
+	// luksKeyslotsMax is the maximux number of keyslots allowed per LUKS device
+	luksKeyslotsMax = 8
 )
 
 var (
-	// ErrNoKeySlots is reported when 0 keyslots are specified
-	ErrNoKeySlots = errors.New("no keyslots specified")
+	// ErrNoKeyslots is reported when 0 keyslots are specified
+	ErrNoKeyslots = errors.New("no keyslots specified")
 	// ErrNoDevmapperName is reported when no device-mapper name is specified
 	ErrNoDevmapperName = errors.New("missing device-mapper name")
 	// ErrNoDevicePath is reported when no device path is specified
 	ErrNoDevicePath = errors.New("missing device path")
 	// ErrTooManyDevices is reported when too many devices are specified
 	ErrTooManyDevices = fmt.Errorf("too many devices specified, at most %d allowed", luksDevicesMax)
-	// ErrTooManyKeySlots is reported when too many keyslots are specified
-	ErrTooManyKeySlots = fmt.Errorf("too many keyslots specified, at most %d allowed", luksKeySlotsMax)
+	// ErrTooManyKeyslots is reported when too many keyslots are specified
+	ErrTooManyKeyslots = fmt.Errorf("too many keyslots specified, at most %d allowed", luksKeyslotsMax)
 )
 
-// Validate ensures this LuksDevice is sane
+// Validate ensures a Luks entry is sane
 //
 // It fulfills validate.validator interface.
-func (ld LuksDevice) Validate() report.Report {
+func (ld Luks) Validate() report.Report {
 	r := report.Report{}
 
 	if ld.Name == "" {
@@ -59,15 +59,15 @@ func (ld LuksDevice) Validate() report.Report {
 			Kind:    report.EntryError,
 		})
 	}
-	if len(ld.KeySlots) == 0 {
+	if len(ld.Keyslots) == 0 {
 		r.Add(report.Entry{
-			Message: ErrNoKeySlots.Error(),
+			Message: ErrNoKeyslots.Error(),
 			Kind:    report.EntryError,
 		})
 	}
-	if len(ld.KeySlots) > luksKeySlotsMax {
+	if len(ld.Keyslots) > luksKeyslotsMax {
 		r.Add(report.Entry{
-			Message: ErrTooManyKeySlots.Error(),
+			Message: ErrTooManyKeyslots.Error(),
 			Kind:    report.EntryError,
 		})
 	}
