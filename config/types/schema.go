@@ -90,9 +90,9 @@ type LinkEmbedded1 struct {
 }
 
 type Luks struct {
-	Device   string        `json:"device,omitempty"`
-	Keyslots []LuksKeyslot `json:"keyslots,omitempty"`
-	Name     string        `json:"name,omitempty"`
+	Device   string        `json:"device"`
+	Keyslots []LuksKeyslot `json:"keyslots"`
+	Name     string        `json:"name"`
 }
 
 type LuksKeyslot struct {
