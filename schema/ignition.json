@@ -245,7 +245,12 @@
                 "$ref": "#/definitions/storage/definitions/luksKeyslot"
               }
             }
-          }
+          },
+          "required": [
+            "device",
+            "keyslots",
+            "name"
+          ]
         },
         "luksKeyslot": {
           "type": "object",
