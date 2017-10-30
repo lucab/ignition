@@ -37,6 +37,14 @@ func (s stage) createLuks(config types.Config) error {
 	s.Logger.PushPrefix("createLuks")
 	defer s.Logger.PopPrefix()
 
+	devs := []string{}
+	for _, entry := range config.Storage.Luks {
+		devs = append(devs, entry.Device)
+	}
+	if err := s.waitOnDevicesAndCreateAliases(devs, "luks"); err != nil {
+		return err
+	}
+
 	for _, luksEntry := range luksCfg {
 		if err := s.createLuksEntry(luksEntry); err != nil {
 			return err
