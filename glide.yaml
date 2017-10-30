@@ -33,6 +33,8 @@ import:
   - context/ctxhttp
 - package: github.com/aws/aws-sdk-go
   version: v1.8.39
+- package: github.com/martinjungblut/cryptsetup
+  version: b8e02b3798cd1d11c849e79d67ea83e23f86ab05
 testImport:
 - package: github.com/stretchr/testify
   version: 4d4bfba8f1d1027c4fdbe371823030df51419987
