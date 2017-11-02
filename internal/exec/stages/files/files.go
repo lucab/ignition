@@ -15,6 +15,8 @@
 package files
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -29,10 +31,15 @@ import (
 	"github.com/coreos/ignition/internal/log"
 	"github.com/coreos/ignition/internal/resource"
 	internalUtil "github.com/coreos/ignition/internal/util"
+	"strings"
 )
 
 const (
 	name = "files"
+	// bootCrypttab is the path to `/etc/crypttab` target on BOOT partition
+	bootCrypttab = "/boot/etc/crypttab"
+	// csAgentDevPath is the path to crypsetup-agent devices config
+	csAgentDevPath = "/boot/etc/cryptsetup-agent/dev"
 )
 
 var (
@@ -68,6 +75,11 @@ func (stage) Name() string {
 }
 
 func (s stage) Run(config types.Config) bool {
+	if err := s.createCryptsetup(config); err != nil {
+		s.Logger.Crit("failed to configure cryptsetup: %v", err)
+		return false
+	}
+
 	if err := s.createPasswd(config); err != nil {
 		s.Logger.Crit("failed to create users/groups: %v", err)
 		return false
@@ -485,6 +497,132 @@ func (s stage) createGroups(config types.Config) error {
 			return fmt.Errorf("failed to create group %q: %v",
 				g.Name, err)
 		}
+	}
+
+	return nil
+}
+
+type cryptEntry struct {
+	Name     string
+	Device   string
+	Password string
+	Options  string
+}
+
+func (s stage) CreateCryptEntry(luks types.Luks) (*cryptEntry, error) {
+	// TODO(lucab): finish this
+	entry := cryptEntry{
+		Name:     luks.Name,
+		Device:   luks.Device,
+		Password: "none",
+		Options:  "luks",
+	}
+	return &entry, nil
+}
+
+// createCryptsetup creates all cryptsetup-related assets required by config.Storage.Luks.
+func (s stage) createCryptsetup(config types.Config) error {
+	if len(config.Storage.Luks) == 0 {
+		return nil
+	}
+	s.Logger.PushPrefix("createCryptsetup")
+	defer s.Logger.PopPrefix()
+
+	if err := os.MkdirAll(csAgentDevPath, 0400); err != nil {
+		return fmt.Errorf("failed to create directory %q: %v", csAgentDevPath, err)
+	}
+
+	for _, l := range config.Storage.Luks {
+		// TODO(lucab): this is a stub, needs to be completed
+		devConf, err := csAgentDevConfig(l)
+		if err != nil {
+			return fmt.Errorf("failed to assemble cryptsetup config for %q: %v", l.Device, err)
+		}
+
+		confPath, err := deviceToJSONName(l.Device)
+		if err != nil {
+			return err
+		}
+
+		fp, err := os.OpenFile(confPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
+		if err != nil {
+			return err
+		}
+		defer fp.Close()
+
+		bufwr := bufio.NewWriter(fp)
+		if _, err := bufwr.Write([]byte(devConf)); err != nil {
+			return fmt.Errorf("failed to write %q: %v", bootCrypttab, err)
+		}
+		if err := bufwr.Flush(); err != nil {
+			return fmt.Errorf("failed to flush %q: %v", bootCrypttab, err)
+		}
+	}
+
+	return s.createCrypttab(config)
+}
+
+// deviceToJSONName resolves a device name to the pathname for its config file.
+func deviceToJSONName(devName string) (string, error) {
+	devPath, err := filepath.EvalSymlinks(devName)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve %q: %v", devName, err)
+	}
+	trimDevName := strings.TrimPrefix(devPath, "/")
+	escDevName := strings.Replace(trimDevName, "/", "-", -1)
+	jsonName := escDevName + ".json"
+	path := filepath.Join(csAgentDevPath, jsonName)
+	return path, nil
+}
+
+// csAgentDevConfig transform an Ignition config entry into a cryptsetup-agent one.
+func csAgentDevConfig(luks types.Luks) (string, error) {
+	// TODO(lucab): implement proper translation here and encompass all cases
+	csConfig := `{
+  "kind": "ContentV1",
+  "value": {
+    "source": "http://cdn.rawgit.com/lucab/4cb25bbe740058563325bc1ffc99bd26/raw/9a58134aad521f9b19606fe88c2d61438e5d0b60/agent-test.txt"
+  }
+}
+`
+	return csConfig, nil
+}
+
+// createCrypttab creates crypttab as described in config.Storage.Luks.
+func (s stage) createCrypttab(config types.Config) error {
+	baseDir := filepath.Dir(bootCrypttab)
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %q: %v", baseDir, err)
+	}
+
+	fp, err := os.OpenFile(bootCrypttab, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
+	if err != nil {
+		if os.IsExist(err) {
+			s.Logger.Info(fmt.Sprintf("%s already exists, skipping", bootCrypttab))
+			return nil
+		}
+		return err
+	}
+	defer fp.Close()
+
+	var crypttab bytes.Buffer
+	for _, l := range config.Storage.Luks {
+		entry, err := s.CreateCryptEntry(l)
+		if err != nil {
+			return fmt.Errorf("failed to create crypttab entry: %v", err)
+		}
+		line := fmt.Sprintf("%s %s %s %s\n", entry.Name, entry.Device, entry.Password, entry.Options)
+		if _, err := crypttab.Write([]byte(line)); err != nil {
+			return fmt.Errorf("failed to buffer crypttab entry: %v", err)
+		}
+	}
+
+	bufwr := bufio.NewWriter(fp)
+	if _, err := bufwr.Write(crypttab.Bytes()); err != nil {
+		return fmt.Errorf("failed to write %q: %v", bootCrypttab, err)
+	}
+	if err := bufwr.Flush(); err != nil {
+		return fmt.Errorf("failed to flush %q: %v", bootCrypttab, err)
 	}
 
 	return nil
