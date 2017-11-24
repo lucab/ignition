@@ -263,6 +263,9 @@
             },
             "hcVault": {
                 "type": ["string", "null"]
+            },
+            "plaintext": {
+                "type": ["string", "null"]
             }
           }
         },
