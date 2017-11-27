@@ -293,14 +293,10 @@
                   "type": "object",
                   "properties": {
                     "baseURL": {
-                      "type": [
-                        "string"
-                      ]
+                      "type": "string"
                     },
                     "keyName": {
-                      "type": [
-                        "string"
-                      ]
+                      "type": "string"
                     },
                     "keyVersion": {
                       "type": [
@@ -314,14 +310,10 @@
                   "type": "object",
                   "properties": {
                     "baseURL": {
-                      "type": [
-                        "string"
-                      ]
+                      "type": "string"
                     },
                     "roleID": {
-                      "type": [
-                        "string"
-                      ]
+                      "type": "string"
                     },
                     "secretID": {
                       "type": [
@@ -330,9 +322,7 @@
                       ]
                     },
                     "transitKeyName": {
-                      "type": [
-                        "string"
-                      ]
+                      "type": "string"
                     }
                   }
                 },
@@ -340,9 +330,7 @@
                   "type": "object",
                   "properties": {
                     "source": {
-                      "type": [
-                        "string"
-                      ]
+                      "type": "string"
                     }
                   }
                 },
