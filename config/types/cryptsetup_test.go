@@ -22,20 +22,26 @@ import (
 )
 
 func TestCryptsetupValidate(t *testing.T) {
+	simpleSlots := []LuksKeyslot{
+		{
+			Content: &Content{Source: "https://127.0.0.1"},
+		},
+	}
+
 	tests := []struct {
-		in  Crytpsetup
+		in  Cryptsetup
 		out error
 	}{
 		{
-			in:  Crytpsetup{Name: "foo", Device: "/dev/bar", Keyslots: []CrytpsetupKeyslot{}},
+			in:  Cryptsetup{Name: "foo", Device: "/dev/bar", KeySlots: simpleSlots},
 			out: nil,
 		},
 		{
-			in:  Crytpsetup{Name: "", Device: "/dev/bar", Keyslots: []CrytpsetupKeyslot{}},
+			in:  Cryptsetup{Name: "", Device: "/dev/bar", KeySlots: simpleSlots},
 			out: ErrNoDevmapperName,
 		},
 		{
-			in:  Crytpsetup{Name: "foo", Device: "", Keyslots: []CrytpsetupKeyslot{}},
+			in:  Cryptsetup{Name: "foo", Device: "", KeySlots: simpleSlots},
 			out: ErrNoDevicePath,
 		},
 	}
