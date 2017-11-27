@@ -509,20 +509,20 @@ type cryptEntry struct {
 	Options  string
 }
 
-func (s stage) CreateCryptEntry(luks types.Luks) (*cryptEntry, error) {
+func (s stage) CreateCryptEntry(cs types.Cryptsetup) (*cryptEntry, error) {
 	// TODO(lucab): finish this
 	entry := cryptEntry{
-		Name:     luks.Name,
-		Device:   luks.Device,
+		Name:     cs.Name,
+		Device:   cs.Device,
 		Password: "none",
 		Options:  "luks",
 	}
 	return &entry, nil
 }
 
-// createCryptsetup creates all cryptsetup-related assets required by config.Storage.Luks.
+// createCryptsetup creates all cryptsetup-related assets required by config.Storage.Cryptsetup.
 func (s stage) createCryptsetup(config types.Config) error {
-	if len(config.Storage.Luks) == 0 {
+	if len(config.Storage.Cryptsetup) == 0 {
 		return nil
 	}
 	s.Logger.PushPrefix("createCryptsetup")
@@ -532,7 +532,7 @@ func (s stage) createCryptsetup(config types.Config) error {
 		return fmt.Errorf("failed to create directory %q: %v", csAgentDevPath, err)
 	}
 
-	for _, l := range config.Storage.Luks {
+	for _, l := range config.Storage.Cryptsetup {
 		// TODO(lucab): this is a stub, needs to be completed
 		devConf, err := csAgentDevConfig(l)
 		if err != nil {
@@ -576,7 +576,7 @@ func deviceToJSONName(devName string) (string, error) {
 }
 
 // csAgentDevConfig transform an Ignition config entry into a cryptsetup-agent one.
-func csAgentDevConfig(luks types.Luks) (string, error) {
+func csAgentDevConfig(luks types.Cryptsetup) (string, error) {
 	// TODO(lucab): implement proper translation here and encompass all cases
 	csConfig := `{
   "kind": "ContentV1",
@@ -588,7 +588,7 @@ func csAgentDevConfig(luks types.Luks) (string, error) {
 	return csConfig, nil
 }
 
-// createCrypttab creates crypttab as described in config.Storage.Luks.
+// createCrypttab creates crypttab as described in config.Storage.Cryptsetup.
 func (s stage) createCrypttab(config types.Config) error {
 	baseDir := filepath.Dir(bootCrypttab)
 	if err := os.MkdirAll(baseDir, 0755); err != nil {
@@ -606,7 +606,7 @@ func (s stage) createCrypttab(config types.Config) error {
 	defer fp.Close()
 
 	var crypttab bytes.Buffer
-	for _, l := range config.Storage.Luks {
+	for _, l := range config.Storage.Cryptsetup {
 		entry, err := s.CreateCryptEntry(l)
 		if err != nil {
 			return fmt.Errorf("failed to create crypttab entry: %v", err)

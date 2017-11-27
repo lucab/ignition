@@ -91,8 +91,8 @@ func (s stage) Run(config types.Config) bool {
 		return false
 	}
 
-	if err := s.createLuks(config); err != nil {
-		s.Logger.Crit("failed to create raids: %v", err)
+	if err := s.createCryptsetup(config); err != nil {
+		s.Logger.Crit("failed to create encrypted volumes: %v", err)
 		return false
 	}
 
