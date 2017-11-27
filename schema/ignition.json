@@ -24,10 +24,15 @@
   ],
   "definitions": {
     "verification": {
-        "type": "object",
-        "properties": {
-            "hash": { "type": ["string", "null"] }
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
+      }
     },
     "ignition": {
       "type": "object",
@@ -58,7 +63,10 @@
           }
         },
         "config-reference": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "properties": {
             "source": {
               "type": "string"
@@ -72,10 +80,16 @@
           "type": "object",
           "properties": {
             "httpResponseHeaders": {
-              "type": ["integer", "null"]
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "httpTotal": {
-              "type": ["integer", "null"]
+              "type": [
+                "integer",
+                "null"
+              ]
             }
           }
         }
@@ -175,7 +189,10 @@
               "$ref": "#/definitions/storage/definitions/mount"
             },
             "path": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         },
@@ -199,17 +216,17 @@
         },
         "directory": {
           "allOf": [
-              {
-                "$ref": "#/definitions/storage/definitions/node"
-              },
-              {
-                "type": "object",
-                "properties": {
-                    "mode": {
-                        "type": "integer"
-                    }
+            {
+              "$ref": "#/definitions/storage/definitions/node"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "integer"
                 }
               }
+            }
           ]
         },
         "link": {
@@ -254,73 +271,94 @@
             "keySlots",
             "name"
           ],
-        "definitions": {
-        "luksKeyslot": {
-          "type": "object",
-          "properties": {
-            "azureVault": {
-                "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/azureVault"
-            },
-            "content": {
-                "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/content"
-            },
-            "hcVault": {
-                "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/hcVault"
-            },
-            "swap": {
-                "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/swap"
-            }
-          },
           "definitions": {
-              "azureVault": {
-                  "type": "object",
-                  "properties": {
-                      "baseURL": {
-                          "type": ["string"]
-                      },
-                      "keyName": {
-                          "type": ["string"]
-                      },
-                      "keyVersion": {
-                          "type": ["string", "null"]
-                      }
-                  }
+            "luksKeyslot": {
+              "type": "object",
+              "properties": {
+                "azureVault": {
+                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/azureVault"
+                },
+                "content": {
+                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/content"
+                },
+                "hcVault": {
+                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/hcVault"
+                },
+                "swap": {
+                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/swap"
+                }
               },
-              "hcVault": {
+              "definitions": {
+                "azureVault": {
                   "type": "object",
                   "properties": {
-                      "baseURL": {
-                          "type": ["string"]
-                      },
-                      "roleID": {
-                          "type": ["string"]
-                      },
-                      "secretID": {
-                          "type": ["string", "null"]
-                      },
-                      "transitKeyName": {
-                          "type": ["string"]
-                      }
+                    "baseURL": {
+                      "type": [
+                        "string"
+                      ]
+                    },
+                    "keyName": {
+                      "type": [
+                        "string"
+                      ]
+                    },
+                    "keyVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
                   }
-              },
-              "content": {
+                },
+                "hcVault": {
                   "type": "object",
                   "properties": {
-                      "source": {
-                          "type": ["string"]
-                      }
+                    "baseURL": {
+                      "type": [
+                        "string"
+                      ]
+                    },
+                    "roleID": {
+                      "type": [
+                        "string"
+                      ]
+                    },
+                    "secretID": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "transitKeyName": {
+                      "type": [
+                        "string"
+                      ]
+                    }
                   }
-              },
-              "swap": {
+                },
+                "content": {
                   "type": "object",
                   "properties": {
-                      "randomPath": {
-                          "type": ["string", "null"]
-                      }
+                    "source": {
+                      "type": [
+                        "string"
+                      ]
+                    }
                   }
+                },
+                "swap": {
+                  "type": "object",
+                  "properties": {
+                    "randomPath": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
               }
-          }
-        }
+            }
           }
         },
         "partition": {
@@ -347,7 +385,10 @@
           }
         },
         "mount": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "properties": {
             "device": {
               "type": "string"
@@ -356,22 +397,31 @@
               "type": "string"
             },
             "options": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                }
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "wipeFilesystem": {
               "type": "boolean"
             },
             "label": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "uuid": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "create": {
-              "type": ["object", "null"],
+              "type": [
+                "object",
+                "null"
+              ],
               "properties": {
                 "force": {
                   "type": "boolean"
@@ -413,10 +463,13 @@
               "type": "object",
               "properties": {
                 "id": {
-                  "type": ["integer", "null"]
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "name": {
-                    "type": "string"
+                  "type": "string"
                 }
               }
             },
@@ -424,10 +477,13 @@
               "type": "object",
               "properties": {
                 "id": {
-                  "type": ["integer", "null"]
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "name": {
-                    "type": "string"
+                  "type": "string"
                 }
               }
             }
@@ -456,7 +512,10 @@
               "type": "boolean"
             },
             "enabled": {
-              "type": ["boolean", "null"]
+              "type": [
+                "boolean",
+                "null"
+              ]
             },
             "mask": {
               "type": "boolean"
@@ -533,7 +592,10 @@
               "type": "string"
             },
             "passwordHash": {
-              "type": ["string", "null"]
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "sshAuthorizedKeys": {
               "type": "array",
@@ -542,7 +604,10 @@
               }
             },
             "uid": {
-              "type": ["integer", "null"]
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "gecos": {
               "type": "string"
@@ -586,7 +651,10 @@
               "type": "string"
             },
             "gid": {
-              "type": ["integer", "null"]
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "passwordHash": {
               "type": "string"
@@ -597,10 +665,16 @@
           }
         },
         "usercreate": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "properties": {
             "uid": {
-              "type": ["integer", "null"]
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "gecos": {
               "type": "string"
