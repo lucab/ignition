@@ -134,7 +134,7 @@
             "$ref": "#/definitions/storage/definitions/link"
           }
         },
-        "crypsetup": {
+        "cryptsetup": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/storage/definitions/cryptsetup"
