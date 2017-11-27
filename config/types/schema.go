@@ -114,10 +114,10 @@ type LinkEmbedded1 struct {
 }
 
 type LuksKeyslot struct {
-	AzureVault AzureVault `json:"azureVault,omitempty"`
-	Content    Content    `json:"content,omitempty"`
-	HcVault    HcVault    `json:"hcVault,omitempty"`
-	Swap       Swap       `json:"swap,omitempty"`
+	AzureVault *AzureVault `json:"azureVault,omitempty"`
+	Content    *Content    `json:"content,omitempty"`
+	HcVault    *HcVault    `json:"hcVault,omitempty"`
+	Swap       *Swap       `json:"swap,omitempty"`
 }
 
 type Mount struct {
