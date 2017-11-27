@@ -1,4 +1,4 @@
-// Copyright 2016 CoreOS, Inc.
+// Copyright 2017 CoreOS, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,21 +21,21 @@ import (
 	"github.com/coreos/ignition/config/validate/report"
 )
 
-func TestLuksValidate(t *testing.T) {
+func TestCryptsetupValidate(t *testing.T) {
 	tests := []struct {
-		in  Luks
+		in  Crytpsetup
 		out error
 	}{
 		{
-			in:  Luks{Name: "foo", Device: "/dev/bar", Keyslots: []LuksKeyslot{}},
+			in:  Crytpsetup{Name: "foo", Device: "/dev/bar", Keyslots: []CrytpsetupKeyslot{}},
 			out: nil,
 		},
 		{
-			in:  Luks{Name: "", Device: "/dev/bar", Keyslots: []LuksKeyslot{}},
+			in:  Crytpsetup{Name: "", Device: "/dev/bar", Keyslots: []CrytpsetupKeyslot{}},
 			out: ErrNoDevmapperName,
 		},
 		{
-			in:  Luks{Name: "foo", Device: "", Keyslots: []LuksKeyslot{}},
+			in:  Crytpsetup{Name: "foo", Device: "", Keyslots: []CrytpsetupKeyslot{}},
 			out: ErrNoDevicePath,
 		},
 	}
