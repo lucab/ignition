@@ -290,7 +290,7 @@
               },
               "definitions": {
                 "azureVault": {
-                  "type": "object",
+                  "type": ["object", "null"],
                   "properties": {
                     "baseURL": {
                       "type": "string"
@@ -307,7 +307,7 @@
                   }
                 },
                 "hcVault": {
-                  "type": "object",
+                  "type": ["object", "null"],
                   "properties": {
                     "baseURL": {
                       "type": "string"
@@ -327,7 +327,7 @@
                   }
                 },
                 "content": {
-                  "type": "object",
+                  "type": ["object", "null"],
                   "properties": {
                     "source": {
                       "type": "string"
@@ -335,7 +335,7 @@
                   }
                 },
                 "swap": {
-                  "type": "object",
+                  "type": ["object", "null"],
                   "properties": {
                     "randomPath": {
                       "type": [
