@@ -19,6 +19,24 @@ The Ignition configuration is a JSON document conforming to the following specif
     * **_httpResponseHeaders_** (integer) the time to wait (in seconds) for the server's response headers (but not the body) after making a request. 0 indicates no timeout. Default is 10 seconds.
     * **_httpTotal_** (integer) the time limit (in seconds) for the operation (connection, request, and response), including retries. 0 indicates no timeout. Default is 0.
 * **_storage_** (object): describes the desired state of the system's storage devices.
+  * **_cryptsetup_** (list of objects): the list of to be configured and their options.
+    * **name** (string): name for the device-mapper to create.
+    * **device** (string): the absolute path to the device. Devices are typically referenced by the `/dev/disk/by-*` symlinks.
+    * **_allowDiscard_** (boolean): whether to enable TRIM/discard passthrough. Defaults to `false`.
+    * **keySlots** (list of objects): the list of keyslots to be configured and their options. Currently, it must contain exactly one entry.
+      * **_azureVault_** (object):
+        * **baseURL** (string): the base URL of Azure Vault service. Supported schemes are: `https`.
+        * **keyName** (string):
+        * **_keyVersion_** (string):
+      * **_hcVault_** (object):
+        * **baseURL** (string): the base URL of Hashicorp Vault service. Supported schemes are: `https`.
+        * **roleId** (string): role ID for Vault AppRole authentication.
+        * **_secretId_** (string, optional): secret ID for Vault AppRole authentication.
+        * **transitKeyName** (string): name of the key in the Transit backend.
+      * **_content_** (object):
+        * **source** (string): the URL of the passphrase. Supported schemes are: `https`.
+      * **_swap_** (object):
+        * **_randomPath_** (string): path to a random number generator device (default: `/dev/urandom`).
   * **_disks_** (list of objects): the list of disks to be configured and their options.
     * **device** (string): the absolute path to the device. Devices are typically referenced by the `/dev/disk/by-*` symlinks.
     * **_wipeTable_** (boolean): whether or not the partition tables shall be wiped. When true, the partition tables are erased before any further manipulation. Otherwise, the existing entries are left intact.
