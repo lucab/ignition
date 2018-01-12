@@ -29,19 +29,19 @@ func TestCryptsetupValidate(t *testing.T) {
 	}
 
 	tests := []struct {
-		in  Cryptsetup
+		in  Encryption
 		out error
 	}{
 		{
-			in:  Cryptsetup{Name: "foo", Device: "/dev/bar", KeySlots: simpleSlots},
+			in:  Encryption{Name: "foo", Device: "/dev/bar", KeySlots: simpleSlots},
 			out: nil,
 		},
 		{
-			in:  Cryptsetup{Name: "", Device: "/dev/bar", KeySlots: simpleSlots},
+			in:  Encryption{Name: "", Device: "/dev/bar", KeySlots: simpleSlots},
 			out: ErrNoDevmapperName,
 		},
 		{
-			in:  Cryptsetup{Name: "foo", Device: "", KeySlots: simpleSlots},
+			in:  Encryption{Name: "foo", Device: "", KeySlots: simpleSlots},
 			out: ErrNoDevicePath,
 		},
 	}

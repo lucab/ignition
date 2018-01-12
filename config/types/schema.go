@@ -32,13 +32,6 @@ type Create struct {
 
 type CreateOption string
 
-type Cryptsetup struct {
-	AllowDiscard bool          `json:"allowDiscard,omitempty"`
-	Device       string        `json:"device"`
-	KeySlots     []LuksKeyslot `json:"keySlots"`
-	Name         string        `json:"name"`
-}
-
 type Device string
 
 type Directory struct {
@@ -59,6 +52,14 @@ type Disk struct {
 type Dropin struct {
 	Contents string `json:"contents,omitempty"`
 	Name     string `json:"name,omitempty"`
+}
+
+type Encryption struct {
+	Device         string        `json:"device"`
+	DisableDiscard bool          `json:"disableDiscard,omitempty"`
+	KeySlots       []LuksKeyslot `json:"keySlots"`
+	Name           string        `json:"name"`
+	WipeVolume     bool          `json:"wipeVolume,omitempty"`
 }
 
 type File struct {
@@ -117,7 +118,6 @@ type LuksKeyslot struct {
 	AzureVault *AzureVault `json:"azureVault,omitempty"`
 	Content    *Content    `json:"content,omitempty"`
 	HcVault    *HcVault    `json:"hcVault,omitempty"`
-	Swap       *Swap       `json:"swap,omitempty"`
 }
 
 type Mount struct {
@@ -206,17 +206,13 @@ type Raid struct {
 type SSHAuthorizedKey string
 
 type Storage struct {
-	Cryptsetup  []Cryptsetup `json:"cryptsetup,omitempty"`
 	Directories []Directory  `json:"directories,omitempty"`
 	Disks       []Disk       `json:"disks,omitempty"`
+	Encryption  []Encryption `json:"encryption,omitempty"`
 	Files       []File       `json:"files,omitempty"`
 	Filesystems []Filesystem `json:"filesystems,omitempty"`
 	Links       []Link       `json:"links,omitempty"`
 	Raid        []Raid       `json:"raid,omitempty"`
-}
-
-type Swap struct {
-	RandomPath *string `json:"randomPath,omitempty"`
 }
 
 type Systemd struct {

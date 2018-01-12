@@ -26,27 +26,27 @@ import (
 	"golang.org/x/net/context"
 )
 
-// createCryptsetup creates cryptsetup partitions described in config.Storage.Cryptsetup
+// createCryptsetup creates cryptsetup partitions described in config.Storage.Encryption
 //
 // This assumes that cryptsetup config has already been validated at parsing time.
 func (s stage) createCryptsetup(config types.Config) error {
-	csCfg := config.Storage.Cryptsetup
-	if len(csCfg) == 0 {
+	encCfg := config.Storage.Encryption
+	if len(encCfg) == 0 {
 		return nil
 	}
 	s.Logger.PushPrefix("createCryptsetup")
 	defer s.Logger.PopPrefix()
 
 	devs := []string{}
-	for _, entry := range config.Storage.Cryptsetup {
+	for _, entry := range config.Storage.Encryption {
 		devs = append(devs, entry.Device)
 	}
 	if err := s.waitOnDevicesAndCreateAliases(devs, "crypsetup"); err != nil {
 		return err
 	}
 
-	for _, csEntry := range csCfg {
-		if err := s.createCryptsetupEntry(csEntry); err != nil {
+	for _, encEntry := range encCfg {
+		if err := s.createCryptsetupEntry(encEntry); err != nil {
 			return err
 		}
 	}
@@ -55,13 +55,14 @@ func (s stage) createCryptsetup(config types.Config) error {
 }
 
 // createCryptsetupEntry creates a single cryptsetup partition entry.
-func (s stage) createCryptsetupEntry(csEntry types.Cryptsetup) error {
+func (s stage) createCryptsetupEntry(encEntry types.Encryption) error {
+	ctx := context.Background()
 	// Fetch keyslots passphrases
 	keys := []string{}
-	for i, slot := range csEntry.KeySlots {
-		key, err := s.fetchKeyslotPass(context.Background(), slot)
+	for i, slot := range encEntry.KeySlots {
+		key, err := s.fetchKeyslotPass(ctx, slot)
 		if err != nil {
-			return fmt.Errorf("fetching keyslot passphrase %d for %q: %v", i, csEntry.Name, err)
+			return fmt.Errorf("fetching keyslot passphrase %d for %q: %v", i, encEntry.Name, err)
 		}
 		keys = append(keys, key)
 		// TODO(lucab): remove
@@ -78,36 +79,36 @@ func (s stage) createCryptsetupEntry(csEntry types.Cryptsetup) error {
 		Data_alignment: 0,
 		Data_device:    "",
 	}
-	err, device := cryptsetup.Init(csEntry.Device)
+	err, device := cryptsetup.Init(encEntry.Device)
 	if err != nil {
-		return fmt.Errorf("unable to initialize cryptsetup on device %q: %v", csEntry.Device, err)
+		return fmt.Errorf("unable to initialize cryptsetup on device %q: %v", encEntry.Device, err)
 	}
 	err = device.FormatLUKS(cypherKind, cypherMode, "", "", 256/8, params)
 	if err != nil {
-		return fmt.Errorf("unable to format device %q for cryptsetup: %v", csEntry.Device, err)
+		return fmt.Errorf("unable to format device %q for cryptsetup: %v", encEntry.Device, err)
 	}
 
 	// Add passphrases to keyslots
 	for i, key := range keys {
 		err = device.AddPassphraseToKeyslot(i, "", key)
 		if err != nil {
-			return fmt.Errorf("error setting keyslot %d passphrase for %q: %v", i, csEntry.Name, err)
+			return fmt.Errorf("error setting keyslot %d passphrase for %q: %v", i, encEntry.Name, err)
 		}
 	}
 
 	// Leave the device in an active state
 	err = device.Load()
 	if err != nil {
-		return fmt.Errorf("error loading cryptsetup data from device %q: %v", csEntry.Device, err)
+		return fmt.Errorf("error loading cryptsetup data from device %q: %v", encEntry.Device, err)
 	}
 	for i, key := range keys {
-		err = device.Activate(csEntry.Name, i, key, 0)
+		err = device.Activate(encEntry.Name, i, key, 0)
 		if err == nil {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("unable to activate cryptsetup entry %q", csEntry.Name)
+	return fmt.Errorf("unable to activate cryptsetup entry %q", encEntry.Name)
 }
 
 func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) (string, error) {

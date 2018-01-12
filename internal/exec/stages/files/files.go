@@ -16,7 +16,6 @@ package files
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -36,10 +35,8 @@ import (
 
 const (
 	name = "files"
-	// bootCrypttab is the path to `/etc/crypttab` target on BOOT partition
-	bootCrypttab = "/boot/etc/crypttab"
-	// csAgentDevPath is the path to crypsetup-agent devices config
-	csAgentDevPath = "/boot/etc/cryptsetup-agent/dev"
+	// csAgentDevPath is the path to coreos-cryptagent devices config
+	csAgentDevPath = "/boot/etc/coreos-cryptagent/dev/"
 )
 
 var (
@@ -509,7 +506,7 @@ type cryptEntry struct {
 	Options  string
 }
 
-func (s stage) CreateCryptEntry(cs types.Cryptsetup) (*cryptEntry, error) {
+func (s stage) CreateCryptEntry(cs types.Encryption) (*cryptEntry, error) {
 	// TODO(lucab): finish this
 	entry := cryptEntry{
 		Name:     cs.Name,
@@ -520,9 +517,9 @@ func (s stage) CreateCryptEntry(cs types.Cryptsetup) (*cryptEntry, error) {
 	return &entry, nil
 }
 
-// createCryptsetup creates all cryptsetup-related assets required by config.Storage.Cryptsetup.
+// createCryptsetup creates all cryptsetup-related assets required by config.Storage.Encryption.
 func (s stage) createCryptsetup(config types.Config) error {
-	if len(config.Storage.Cryptsetup) == 0 {
+	if len(config.Storage.Encryption) == 0 {
 		return nil
 	}
 	s.Logger.PushPrefix("createCryptsetup")
@@ -532,7 +529,7 @@ func (s stage) createCryptsetup(config types.Config) error {
 		return fmt.Errorf("failed to create directory %q: %v", csAgentDevPath, err)
 	}
 
-	for _, l := range config.Storage.Cryptsetup {
+	for _, l := range config.Storage.Encryption {
 		// TODO(lucab): this is a stub, needs to be completed
 		devConf, err := csAgentDevConfig(l)
 		if err != nil {
@@ -552,14 +549,14 @@ func (s stage) createCryptsetup(config types.Config) error {
 
 		bufwr := bufio.NewWriter(fp)
 		if _, err := bufwr.Write([]byte(devConf)); err != nil {
-			return fmt.Errorf("failed to write %q: %v", bootCrypttab, err)
+			return fmt.Errorf("failed to write %q: %v", confPath, err)
 		}
 		if err := bufwr.Flush(); err != nil {
-			return fmt.Errorf("failed to flush %q: %v", bootCrypttab, err)
+			return fmt.Errorf("failed to flush %q: %v", confPath, err)
 		}
 	}
 
-	return s.createCrypttab(config)
+	return nil
 }
 
 // deviceToJSONName resolves a device name to the pathname for its config file.
@@ -576,7 +573,7 @@ func deviceToJSONName(devName string) (string, error) {
 }
 
 // csAgentDevConfig transform an Ignition config entry into a cryptsetup-agent one.
-func csAgentDevConfig(luks types.Cryptsetup) (string, error) {
+func csAgentDevConfig(luks types.Encryption) (string, error) {
 	// TODO(lucab): implement proper translation here and encompass all cases
 	csConfig := `{
   "kind": "ContentV1",
@@ -586,44 +583,4 @@ func csAgentDevConfig(luks types.Cryptsetup) (string, error) {
 }
 `
 	return csConfig, nil
-}
-
-// createCrypttab creates crypttab as described in config.Storage.Cryptsetup.
-func (s stage) createCrypttab(config types.Config) error {
-	baseDir := filepath.Dir(bootCrypttab)
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %q: %v", baseDir, err)
-	}
-
-	fp, err := os.OpenFile(bootCrypttab, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
-	if err != nil {
-		if os.IsExist(err) {
-			s.Logger.Info(fmt.Sprintf("%s already exists, skipping", bootCrypttab))
-			return nil
-		}
-		return err
-	}
-	defer fp.Close()
-
-	var crypttab bytes.Buffer
-	for _, l := range config.Storage.Cryptsetup {
-		entry, err := s.CreateCryptEntry(l)
-		if err != nil {
-			return fmt.Errorf("failed to create crypttab entry: %v", err)
-		}
-		line := fmt.Sprintf("%s %s %s %s\n", entry.Name, entry.Device, entry.Password, entry.Options)
-		if _, err := crypttab.Write([]byte(line)); err != nil {
-			return fmt.Errorf("failed to buffer crypttab entry: %v", err)
-		}
-	}
-
-	bufwr := bufio.NewWriter(fp)
-	if _, err := bufwr.Write(crypttab.Bytes()); err != nil {
-		return fmt.Errorf("failed to write %q: %v", bootCrypttab, err)
-	}
-	if err := bufwr.Flush(); err != nil {
-		return fmt.Errorf("failed to flush %q: %v", bootCrypttab, err)
-	}
-
-	return nil
 }

@@ -48,35 +48,35 @@ var (
 // Validate ensures a Cryptsetup entry is sane
 //
 // It fulfills validate.validator interface.
-func (cs Cryptsetup) Validate() report.Report {
+func (e Encryption) Validate() report.Report {
 	r := report.Report{}
 
-	if cs.Name == "" {
+	if e.Name == "" {
 		r.Add(report.Entry{
 			Message: ErrNoDevmapperName.Error(),
 			Kind:    report.EntryError,
 		})
 	}
-	if cs.Device == "" {
+	if e.Device == "" {
 		r.Add(report.Entry{
 			Message: ErrNoDevicePath.Error(),
 			Kind:    report.EntryError,
 		})
 	}
-	if len(cs.KeySlots) == 0 {
+	if len(e.KeySlots) == 0 {
 		r.Add(report.Entry{
 			Message: ErrNoKeyslots.Error(),
 			Kind:    report.EntryError,
 		})
 	}
-	if len(cs.KeySlots) > csKeyslotsMax {
+	if len(e.KeySlots) > csKeyslotsMax {
 		r.Add(report.Entry{
 			Message: ErrTooManyKeyslots.Error(),
 			Kind:    report.EntryError,
 		})
 	}
 
-	for _, ks := range cs.KeySlots {
+	for _, ks := range e.KeySlots {
 		ksConfigured := 0
 		if ks.AzureVault != nil {
 			ksConfigured++
@@ -85,9 +85,6 @@ func (cs Cryptsetup) Validate() report.Report {
 			ksConfigured++
 		}
 		if ks.HcVault != nil {
-			ksConfigured++
-		}
-		if ks.Swap != nil {
 			ksConfigured++
 		}
 		if ksConfigured == 0 {

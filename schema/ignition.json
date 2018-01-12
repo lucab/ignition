@@ -134,10 +134,10 @@
             "$ref": "#/definitions/storage/definitions/link"
           }
         },
-        "cryptsetup": {
+        "encryption": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/storage/definitions/cryptsetup"
+            "$ref": "#/definitions/storage/definitions/encryption"
           }
         }
       },
@@ -247,23 +247,26 @@
             }
           ]
         },
-        "cryptsetup": {
+        "encryption": {
           "type": "object",
           "properties": {
-            "allowDiscard": {
-              "type": "boolean"
-            },
             "device": {
               "type": "string"
             },
-            "name": {
-              "type": "string"
+            "disableDiscard": {
+              "type": "boolean"
             },
             "keySlots": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot"
+                "$ref": "#/definitions/storage/definitions/encryption/definitions/luksKeyslot"
               }
+            },
+            "name": {
+              "type": "string"
+            },
+            "wipeVolume": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -276,16 +279,13 @@
               "type": "object",
               "properties": {
                 "azureVault": {
-                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/azureVault"
+                  "$ref": "#/definitions/storage/definitions/encryption/definitions/luksKeyslot/definitions/azureVault"
                 },
                 "content": {
-                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/content"
+                  "$ref": "#/definitions/storage/definitions/encryption/definitions/luksKeyslot/definitions/content"
                 },
                 "hcVault": {
-                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/hcVault"
-                },
-                "swap": {
-                  "$ref": "#/definitions/storage/definitions/cryptsetup/definitions/luksKeyslot/definitions/swap"
+                  "$ref": "#/definitions/storage/definitions/encryption/definitions/luksKeyslot/definitions/hcVault"
                 }
               },
               "definitions": {
@@ -331,17 +331,6 @@
                   "properties": {
                     "source": {
                       "type": "string"
-                    }
-                  }
-                },
-                "swap": {
-                  "type": ["object", "null"],
-                  "properties": {
-                    "randomPath": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
                     }
                   }
                 }
