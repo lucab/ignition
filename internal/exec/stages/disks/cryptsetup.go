@@ -20,9 +20,11 @@ package disks
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/coreos/ignition/config/types"
 	"github.com/martinjungblut/cryptsetup"
+	"gitlab.com/lucab/coreos-cryptagent/pkg/providers"
 	"golang.org/x/net/context"
 )
 
@@ -97,8 +99,7 @@ func (s stage) createCryptsetupEntry(encEntry types.Encryption) error {
 	}
 
 	// Leave the device in an active state
-	err = device.Load()
-	if err != nil {
+	if err := device.Load(); err != nil {
 		return fmt.Errorf("error loading cryptsetup data from device %q: %v", encEntry.Device, err)
 	}
 	for i, key := range keys {
@@ -112,6 +113,23 @@ func (s stage) createCryptsetupEntry(encEntry types.Encryption) error {
 }
 
 func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) (string, error) {
-	// TODO(lucab): implement
-	return "fixedkey", nil
+	p, err := providers.FromIgnitionV022(keyslot)
+	if err != nil {
+		return "", err
+	}
+
+	var res providers.Result
+	tries := 5
+	for tries > 0 {
+		ch := make(chan providers.Result, 1)
+		p.GetPassphrase(ctx, ch)
+		res = <-ch
+		if res.Err == nil {
+			break
+		}
+		tries--
+		s.Logger.Debug("retrying in 5s")
+		time.Sleep(time.Duration(5) * time.Second)
+	}
+	return res.Pass, res.Err
 }
