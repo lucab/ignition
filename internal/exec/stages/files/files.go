@@ -580,6 +580,9 @@ func csAgentDevConfig(luks types.Encryption) (string, string, error) {
 	volumeConfig := `{
   "kind": "CryptsetupV1",
   "value": {
+    "name": "cryptoroot",
+    "device": "/dev/vdb1",
+    "disableDiscard":  false
   }
 }
 `
