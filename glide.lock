@@ -1,5 +1,5 @@
-hash: e59e74f5806611c4eb6a6f9125f342bcc78b59559fbec7d15efe1a5b9b2c98ac
-updated: 2018-01-15T11:01:48.701037693Z
+hash: 2ee306c2bc0856a853540457ee6b2cf3116f5fb51bd0d168dfa51d3af98cfed7
+updated: 2018-01-15T14:15:28.721162688Z
 imports:
 - name: github.com/ajeddeloh/go-json
   version: 73d058cf8437a1989030afe571eeab9f90eebbbd
@@ -62,6 +62,8 @@ imports:
   subpackages:
   - rpcvmx
   - vmcheck
+- name: github.com/sirupsen/logrus
+  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/vincent-petithory/dataurl
   version: 9a301d65acbb728fcc3ace14f45f511a4cfeea9c
 - name: github.com/vmware/vmw-guestinfo
@@ -73,16 +75,27 @@ imports:
 - name: github.com/vmware/vmw-ovflib
   version: 1f217b9dc714d5f340d0a3cc3e9d49255c536f68
 - name: gitlab.com/lucab/coreos-cryptagent
-  version: 35d7372a332b5239fe0f52b59888d9181c06ff81
+  version: ce54506b1abf941d99dd282a5258014b372f97da
+  subpackages:
+  - pkg/config
+  - pkg/providers
 - name: go4.org
   version: 03efcb870d84809319ea509714dd6d19a1498483
   subpackages:
   - errorutil
+- name: golang.org/x/crypto
+  version: a7ead6ddf06233883deca151dffaef2effbf498f
+  subpackages:
+  - ssh/terminal
 - name: golang.org/x/net
   version: 075e191f18186a8ff2becaf64478e30f4545cdad
   subpackages:
   - context
   - context/ctxhttp
+- name: golang.org/x/sys
+  version: b44883b474ffefa37335017174e397412b633a4f
+  subpackages:
+  - unix
 testImports:
 - name: github.com/davecgh/go-spew
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9

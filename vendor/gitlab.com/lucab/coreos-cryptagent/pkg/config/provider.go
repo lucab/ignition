@@ -12,28 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package config
 
 import (
-	"os"
-
-	"github.com/sirupsen/logrus"
-	"gitlab.com/lucab/coreos-cryptagent/internal/cli"
+	"encoding/json"
+	"errors"
 )
 
-func main() {
-	logrus.SetLevel(logrus.DebugLevel)
+type ProviderJSON struct {
+	Kind  ProviderKind `json:"kind"`
+	Value interface{}  `json:"value"`
+}
 
-	//logrus.SetLevel(logrus.InfoLevel)
-	if err := cli.Setup(); err != nil {
-		logrus.Errorln(err)
-		os.Exit(2)
+func (pj *ProviderJSON) UnmarshalJSON(b []byte) error {
+	type tmps struct {
+		Kind  ProviderKind     `json:"kind"`
+		Value *json.RawMessage `json:"value"`
+	}
+	var tmp tmps
+	if err := json.Unmarshal(b, &tmp); err != nil {
+		return err
 	}
 
-	if err := cli.Execute(); err != nil {
-		logrus.Errorln(err)
-		os.Exit(1)
+	switch tmp.Kind {
+	case ProviderContentV1:
+		var v ContentV1
+		if err := json.Unmarshal(*tmp.Value, &v); err != nil {
+			return err
+		}
+		pj.Kind = tmp.Kind
+		pj.Value = v
+
+	default:
+		return errors.New("unknown kind")
 	}
 
-	os.Exit(0)
+	return nil
 }

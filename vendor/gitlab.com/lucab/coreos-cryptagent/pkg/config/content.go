@@ -12,28 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package config
 
-import (
-	"os"
-
-	"github.com/sirupsen/logrus"
-	"gitlab.com/lucab/coreos-cryptagent/internal/cli"
-)
-
-func main() {
-	logrus.SetLevel(logrus.DebugLevel)
-
-	//logrus.SetLevel(logrus.InfoLevel)
-	if err := cli.Setup(); err != nil {
-		logrus.Errorln(err)
-		os.Exit(2)
-	}
-
-	if err := cli.Execute(); err != nil {
-		logrus.Errorln(err)
-		os.Exit(1)
-	}
-
-	os.Exit(0)
+type ContentV1 struct {
+	Source string `json:"source"`
 }

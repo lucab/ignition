@@ -12,28 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package config
 
 import (
-	"os"
-
-	"github.com/sirupsen/logrus"
-	"gitlab.com/lucab/coreos-cryptagent/internal/cli"
+	"path/filepath"
 )
 
-func main() {
-	logrus.SetLevel(logrus.DebugLevel)
+const (
+	// BaseDir is the path of the base directory storing coreos-cryptagent config.
+	BaseDir = "/boot/etc/coreos-cryptagent/"
+)
 
-	//logrus.SetLevel(logrus.InfoLevel)
-	if err := cli.Setup(); err != nil {
-		logrus.Errorln(err)
-		os.Exit(2)
-	}
-
-	if err := cli.Execute(); err != nil {
-		logrus.Errorln(err)
-		os.Exit(1)
-	}
-
-	os.Exit(0)
-}
+var (
+	ConfigDir = filepath.Join(BaseDir, "dev")
+)
