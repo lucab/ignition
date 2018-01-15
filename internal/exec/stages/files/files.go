@@ -24,13 +24,13 @@ import (
 	"sort"
 	"syscall"
 
+	"github.com/coreos/go-systemd/unit"
 	"github.com/coreos/ignition/config/types"
 	"github.com/coreos/ignition/internal/exec/stages"
 	"github.com/coreos/ignition/internal/exec/util"
 	"github.com/coreos/ignition/internal/log"
 	"github.com/coreos/ignition/internal/resource"
 	internalUtil "github.com/coreos/ignition/internal/util"
-	"strings"
 )
 
 const (
@@ -530,57 +530,66 @@ func (s stage) createCryptsetup(config types.Config) error {
 	}
 
 	for _, l := range config.Storage.Encryption {
+		escaped := unit.UnitNamePathEscape(l.Device)
+		volumeDir := filepath.Join(csAgentDevPath, escaped)
+		if err := os.MkdirAll(volumeDir, 0400); err != nil {
+			return fmt.Errorf("failed to create directory %q: %v", volumeDir, err)
+		}
+
 		// TODO(lucab): this is a stub, needs to be completed
-		devConf, err := csAgentDevConfig(l)
+		volConf, slotConf, err := csAgentDevConfig(l)
 		if err != nil {
 			return fmt.Errorf("failed to assemble cryptsetup config for %q: %v", l.Device, err)
 		}
-
-		confPath, err := deviceToJSONName(l.Device)
+		volumePath := filepath.Join(volumeDir, "volume.json")
+		vfp, err := os.OpenFile(volumePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
 		if err != nil {
 			return err
 		}
+		defer vfp.Close()
+		vbufwr := bufio.NewWriter(vfp)
+		if _, err := vbufwr.Write([]byte(volConf)); err != nil {
+			return fmt.Errorf("failed to write %q: %v", volumePath, err)
+		}
+		if err := vbufwr.Flush(); err != nil {
+			return fmt.Errorf("failed to flush %q: %v", volumePath, err)
+		}
 
-		fp, err := os.OpenFile(confPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
+		// TODO(lucab): this is a stub, needs to be completed
+		slotPath := filepath.Join(csAgentDevPath, escaped, "0.json")
+		sfp, err := os.OpenFile(slotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
 		if err != nil {
 			return err
 		}
-		defer fp.Close()
-
-		bufwr := bufio.NewWriter(fp)
-		if _, err := bufwr.Write([]byte(devConf)); err != nil {
-			return fmt.Errorf("failed to write %q: %v", confPath, err)
+		defer sfp.Close()
+		sbufwr := bufio.NewWriter(sfp)
+		if _, err := sbufwr.Write([]byte(slotConf)); err != nil {
+			return fmt.Errorf("failed to write %q: %v", volumePath, err)
 		}
-		if err := bufwr.Flush(); err != nil {
-			return fmt.Errorf("failed to flush %q: %v", confPath, err)
+		if err := sbufwr.Flush(); err != nil {
+			return fmt.Errorf("failed to flush %q: %v", volumePath, err)
 		}
 	}
 
 	return nil
 }
 
-// deviceToJSONName resolves a device name to the pathname for its config file.
-func deviceToJSONName(devName string) (string, error) {
-	devPath, err := filepath.EvalSymlinks(devName)
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve %q: %v", devName, err)
-	}
-	trimDevName := strings.TrimPrefix(devPath, "/")
-	escDevName := strings.Replace(trimDevName, "/", "-", -1)
-	jsonName := escDevName + ".json"
-	path := filepath.Join(csAgentDevPath, jsonName)
-	return path, nil
-}
-
 // csAgentDevConfig transform an Ignition config entry into a cryptsetup-agent one.
-func csAgentDevConfig(luks types.Encryption) (string, error) {
+func csAgentDevConfig(luks types.Encryption) (string, string, error) {
 	// TODO(lucab): implement proper translation here and encompass all cases
-	csConfig := `{
+	volumeConfig := `{
+  "kind": "CryptsetupV1",
+  "value": {
+  }
+}
+`
+
+	slotConfig := `{
   "kind": "ContentV1",
   "value": {
     "source": "http://cdn.rawgit.com/lucab/4cb25bbe740058563325bc1ffc99bd26/raw/9a58134aad521f9b19606fe88c2d61438e5d0b60/agent-test.txt"
   }
 }
 `
-	return csConfig, nil
+	return volumeConfig, slotConfig, nil
 }
