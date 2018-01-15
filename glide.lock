@@ -1,5 +1,5 @@
-hash: 8eed57620c94baec3ae3dfbafd6bb1bb44cd6a4e0ee796b728dcb9378c4165dc
-updated: 2017-10-30T10:08:16.021317895Z
+hash: e59e74f5806611c4eb6a6f9125f342bcc78b59559fbec7d15efe1a5b9b2c98ac
+updated: 2018-01-15T11:01:48.701037693Z
 imports:
 - name: github.com/ajeddeloh/go-json
   version: 73d058cf8437a1989030afe571eeab9f90eebbbd
@@ -72,6 +72,8 @@ imports:
   - rpcout
 - name: github.com/vmware/vmw-ovflib
   version: 1f217b9dc714d5f340d0a3cc3e9d49255c536f68
+- name: gitlab.com/lucab/coreos-cryptagent
+  version: 35d7372a332b5239fe0f52b59888d9181c06ff81
 - name: go4.org
   version: 03efcb870d84809319ea509714dd6d19a1498483
   subpackages:
