@@ -33,15 +33,15 @@ func TestCryptsetupValidate(t *testing.T) {
 		out error
 	}{
 		{
-			in:  Encryption{Name: "foo", Device: "/dev/bar", KeySlots: simpleSlots},
+			in:  Encryption{Name: "foo", Device: "/dev/bar", KeySlots: simpleSlots, WipeVolume: true},
 			out: nil,
 		},
 		{
-			in:  Encryption{Name: "", Device: "/dev/bar", KeySlots: simpleSlots},
+			in:  Encryption{Name: "", Device: "/dev/bar", KeySlots: simpleSlots, WipeVolume: true},
 			out: ErrNoDevmapperName,
 		},
 		{
-			in:  Encryption{Name: "foo", Device: "", KeySlots: simpleSlots},
+			in:  Encryption{Name: "foo", Device: "", KeySlots: simpleSlots, WipeVolume: true},
 			out: ErrNoDevicePath,
 		},
 	}

@@ -22,8 +22,10 @@ import (
 )
 
 const (
-	// csDevicesMax is the maximum number of Cryptsetup devices that can be created at once
-	csDevicesMax = 1000
+	// csDevicesMax is the maximum number of Cryptsetup devices that can be
+	// created at once. It is an arbitrary sane number for input validation,
+	// it can be bumped if required.
+	csDevicesMax = 1024
 	// csKeyslotsMax is the maximux number of keyslots allowed per Cryptsetup device
 	csKeyslotsMax = 1 // TODO(lucab): this could be expanded to 8
 )
@@ -32,9 +34,9 @@ var (
 	// ErrNoKeyslots is reported when 0 keyslots are specified
 	ErrNoKeyslots = errors.New("no keyslots specified")
 	// ErrNoKeyslotConfig is reported when a keyslot has no configured source
-	ErrNoKeyslotConfig = errors.New("keyslot is missing source configuration")
+	ErrNoKeyslotConfig = errors.New("keyslot is missing provider configuration")
 	// ErrTooManyKeyslotConfigs is reported when a keyslot has too many configured sources
-	ErrTooManyKeyslotConfigs = errors.New("keyslot has multiple source configurations")
+	ErrTooManyKeyslotConfigs = errors.New("keyslot has multiple provider configurations")
 	// ErrNoDevmapperName is reported when no device-mapper name is specified
 	ErrNoDevmapperName = errors.New("missing device-mapper name")
 	// ErrNoDevicePath is reported when no device path is specified
@@ -72,6 +74,13 @@ func (e Encryption) Validate() report.Report {
 	if len(e.KeySlots) > csKeyslotsMax {
 		r.Add(report.Entry{
 			Message: ErrTooManyKeyslots.Error(),
+			Kind:    report.EntryError,
+		})
+	}
+	if !e.WipeVolume {
+		//TODO(lucab): implement this
+		r.Add(report.Entry{
+			Message: "no wipeVolume - unimplemented",
 			Kind:    report.EntryError,
 		})
 	}

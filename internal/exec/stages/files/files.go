@@ -16,6 +16,7 @@ package files
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -31,12 +32,12 @@ import (
 	"github.com/coreos/ignition/internal/log"
 	"github.com/coreos/ignition/internal/resource"
 	internalUtil "github.com/coreos/ignition/internal/util"
+	"gitlab.com/lucab/coreos-cryptagent/pkg/config"
+	"gitlab.com/lucab/coreos-cryptagent/pkg/providers"
 )
 
 const (
 	name = "files"
-	// csAgentDevPath is the path to coreos-cryptagent devices config
-	csAgentDevPath = "/boot/etc/coreos-cryptagent/dev/"
 )
 
 var (
@@ -499,47 +500,28 @@ func (s stage) createGroups(config types.Config) error {
 	return nil
 }
 
-type cryptEntry struct {
-	Name     string
-	Device   string
-	Password string
-	Options  string
-}
-
-func (s stage) CreateCryptEntry(cs types.Encryption) (*cryptEntry, error) {
-	// TODO(lucab): finish this
-	entry := cryptEntry{
-		Name:     cs.Name,
-		Device:   cs.Device,
-		Password: "none",
-		Options:  "luks",
-	}
-	return &entry, nil
-}
-
 // createCryptsetup creates all cryptsetup-related assets required by config.Storage.Encryption.
-func (s stage) createCryptsetup(config types.Config) error {
-	if len(config.Storage.Encryption) == 0 {
+func (s stage) createCryptsetup(cfg types.Config) error {
+	if len(cfg.Storage.Encryption) == 0 {
 		return nil
 	}
 	s.Logger.PushPrefix("createCryptsetup")
 	defer s.Logger.PopPrefix()
 
-	if err := os.MkdirAll(csAgentDevPath, 0400); err != nil {
-		return fmt.Errorf("failed to create directory %q: %v", csAgentDevPath, err)
+	if err := os.MkdirAll(config.ConfigDir, 0400); err != nil {
+		return fmt.Errorf("failed to create directory %s: %v", config.ConfigDir, err)
 	}
 
-	for _, l := range config.Storage.Encryption {
-		escaped := unit.UnitNamePathEscape(l.Device)
-		volumeDir := filepath.Join(csAgentDevPath, escaped)
+	for _, e := range cfg.Storage.Encryption {
+		escaped := unit.UnitNamePathEscape(e.Device)
+		volumeDir := filepath.Join(config.ConfigDir, escaped)
 		if err := os.MkdirAll(volumeDir, 0400); err != nil {
-			return fmt.Errorf("failed to create directory %q: %v", volumeDir, err)
+			return fmt.Errorf("failed to create directory %s: %v", config.ConfigDir, err)
 		}
 
-		// TODO(lucab): this is a stub, needs to be completed
-		volConf, slotConf, err := csAgentDevConfig(l)
+		volConf, err := agentVolumeConfig(e)
 		if err != nil {
-			return fmt.Errorf("failed to assemble cryptsetup config for %q: %v", l.Device, err)
+			return fmt.Errorf("failed to assemble volume config for %q: %v", e.Device, err)
 		}
 		volumePath := filepath.Join(volumeDir, "volume.json")
 		vfp, err := os.OpenFile(volumePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
@@ -548,22 +530,25 @@ func (s stage) createCryptsetup(config types.Config) error {
 		}
 		defer vfp.Close()
 		vbufwr := bufio.NewWriter(vfp)
-		if _, err := vbufwr.Write([]byte(volConf)); err != nil {
+		if err := json.NewEncoder(vbufwr).Encode(volConf); err != nil {
 			return fmt.Errorf("failed to write %q: %v", volumePath, err)
 		}
 		if err := vbufwr.Flush(); err != nil {
 			return fmt.Errorf("failed to flush %q: %v", volumePath, err)
 		}
 
-		// TODO(lucab): this is a stub, needs to be completed
-		slotPath := filepath.Join(csAgentDevPath, escaped, "0.json")
+		slotConf, err := agentSlotProviderConfig(e.KeySlots[0])
+		if err != nil {
+			return fmt.Errorf("failed to assemble slot config for %q: %v", e.Device, err)
+		}
+		slotPath := filepath.Join(config.ConfigDir, escaped, "0.json")
 		sfp, err := os.OpenFile(slotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
 		if err != nil {
 			return err
 		}
 		defer sfp.Close()
 		sbufwr := bufio.NewWriter(sfp)
-		if _, err := sbufwr.Write([]byte(slotConf)); err != nil {
+		if err := json.NewEncoder(sbufwr).Encode(slotConf); err != nil {
 			return fmt.Errorf("failed to write %q: %v", volumePath, err)
 		}
 		if err := sbufwr.Flush(); err != nil {
@@ -574,25 +559,31 @@ func (s stage) createCryptsetup(config types.Config) error {
 	return nil
 }
 
-// csAgentDevConfig transform an Ignition config entry into a cryptsetup-agent one.
-func csAgentDevConfig(luks types.Encryption) (string, string, error) {
-	// TODO(lucab): implement proper translation here and encompass all cases
-	volumeConfig := `{
-  "kind": "CryptsetupV1",
-  "value": {
-    "name": "cryptoroot",
-    "device": "/dev/vdb1",
-    "disableDiscard":  false
-  }
-}
-`
+func agentVolumeConfig(e types.Encryption) (*config.VolumeJSON, error) {
+	cs := config.CryptsetupV1{
+		Name:           e.Name,
+		Device:         e.Device,
+		DisableDiscard: &e.DisableDiscard,
+	}
 
-	slotConfig := `{
-  "kind": "ContentV1",
-  "value": {
-    "source": "http://cdn.rawgit.com/lucab/4cb25bbe740058563325bc1ffc99bd26/raw/9a58134aad521f9b19606fe88c2d61438e5d0b60/agent-test.txt"
-  }
+	vol := config.VolumeJSON{
+		Kind:  config.VolumeCryptsetupV1,
+		Value: cs,
+	}
+
+	return &vol, nil
 }
-`
-	return volumeConfig, slotConfig, nil
+
+func agentSlotProviderConfig(l types.LuksKeyslot) (*config.ProviderJSON, error) {
+	p, err := providers.FromIgnitionV220(l)
+	if err != nil {
+		return nil, err
+	}
+
+	pj, err := p.ToProviderJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return pj, nil
 }

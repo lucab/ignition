@@ -113,7 +113,7 @@ func (s stage) createCryptsetupEntry(encEntry types.Encryption) error {
 }
 
 func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) (string, error) {
-	p, err := providers.FromIgnitionV022(keyslot)
+	p, err := providers.FromIgnitionV220(keyslot)
 	if err != nil {
 		return "", err
 	}
