@@ -1,5 +1,5 @@
 hash: 2ee306c2bc0856a853540457ee6b2cf3116f5fb51bd0d168dfa51d3af98cfed7
-updated: 2018-01-15T14:15:28.721162688Z
+updated: 2018-01-17T13:40:13.191014609Z
 imports:
 - name: github.com/ajeddeloh/go-json
   version: 73d058cf8437a1989030afe571eeab9f90eebbbd
@@ -33,6 +33,19 @@ imports:
   - service/s3/s3iface
   - service/s3/s3manager
   - service/sts
+- name: github.com/Azure/azure-sdk-for-go
+  version: eae258195456be76b2ec9ad2ee2ab63cdda365d9
+  subpackages:
+  - services/keyvault/2016-10-01/keyvault
+- name: github.com/Azure/go-autorest
+  version: 6311d7a76f54cf2b6dea03d737d9bd9a6022ac5f
+  subpackages:
+  - autorest
+  - autorest/adal
+  - autorest/azure
+  - autorest/date
+  - autorest/to
+  - autorest/validation
 - name: github.com/coreos/go-semver
   version: 294930c1e79c64e7dbe360054274fdad492c8cf5
   subpackages:
@@ -42,6 +55,8 @@ imports:
   subpackages:
   - dbus
   - unit
+- name: github.com/dgrijalva/jwt-go
+  version: dbeaa9332f19a944acb5736b4456cfcc02140e29
 - name: github.com/go-ini/ini
   version: 12f418cc7edc5a618a51407b7ac1f1f512139df3
 - name: github.com/godbus/dbus
@@ -75,7 +90,7 @@ imports:
 - name: github.com/vmware/vmw-ovflib
   version: 1f217b9dc714d5f340d0a3cc3e9d49255c536f68
 - name: gitlab.com/lucab/coreos-cryptagent
-  version: ce54506b1abf941d99dd282a5258014b372f97da
+  version: abaaa507d9330329ec5f7be6fb05d50e814f43b1
   subpackages:
   - pkg/config
   - pkg/providers

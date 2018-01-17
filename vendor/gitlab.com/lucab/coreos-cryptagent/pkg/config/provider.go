@@ -42,7 +42,13 @@ func (pj *ProviderJSON) UnmarshalJSON(b []byte) error {
 		}
 		pj.Kind = tmp.Kind
 		pj.Value = v
-
+	case ProviderAzureVaultV1:
+		var v AzureVaultV1
+		if err := json.Unmarshal(*tmp.Value, &v); err != nil {
+			return err
+		}
+		pj.Kind = tmp.Kind
+		pj.Value = v
 	default:
 		return errors.New("unknown kind")
 	}

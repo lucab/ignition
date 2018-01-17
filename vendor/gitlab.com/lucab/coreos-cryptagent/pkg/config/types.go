@@ -19,13 +19,17 @@ import (
 	"errors"
 )
 
-type VolumeKind int
+// VolumeKind is an enum of volume kinds.
+type VolumeKind uint
 
 const (
+	// VolumeInvalid is the default invalid value for volume kind.
 	VolumeInvalid VolumeKind = iota
+	// VolumeCryptsetupV1 represents a cryptsetup (v1) volume config.
 	VolumeCryptsetupV1
 )
 
+// UnmarshalJSON is part of the json.Unmarshaler interface.
 func (vk *VolumeKind) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
@@ -41,6 +45,7 @@ func (vk *VolumeKind) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalJSON is part of the json.Marshaler interface.
 func (vk *VolumeKind) MarshalJSON() ([]byte, error) {
 	var s string
 	switch *vk {
@@ -66,6 +71,7 @@ const (
 	ProviderHcVaultV1
 )
 
+// UnmarshalJSON is part of the json.Unmarshaler interface.
 func (vk *ProviderKind) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
@@ -75,7 +81,7 @@ func (vk *ProviderKind) UnmarshalJSON(b []byte) error {
 	case "ContentV1":
 		*vk = ProviderContentV1
 	case "AzureVaultV1":
-		return errors.New("unimplemented")
+		*vk = ProviderAzureVaultV1
 	case "HcVaultV1":
 		return errors.New("unimplemented")
 	default:
@@ -85,13 +91,14 @@ func (vk *ProviderKind) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalJSON is part of the json.Marshaler interface.
 func (vk *ProviderKind) MarshalJSON() ([]byte, error) {
 	var s string
 	switch *vk {
 	case ProviderContentV1:
 		s = "ContentV1"
 	case ProviderAzureVaultV1:
-		return nil, errors.New("unimplemented")
+		s = "AzureVaultV1"
 	case ProviderHcVaultV1:
 		return nil, errors.New("unimplemented")
 	default:

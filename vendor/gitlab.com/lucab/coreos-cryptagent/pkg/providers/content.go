@@ -66,7 +66,7 @@ func contentFromIgnitionV022(ks types.LuksKeyslot) (*content, error) {
 
 func (c *content) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 	if c == nil {
-		doneCh <- Result{"", errors.New("nil Content receiver")}
+		doneCh <- Result{"", errors.New("nil content receiver")}
 		return
 	}
 	if c.source == "" {
@@ -92,4 +92,23 @@ func (c *content) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 	}
 
 	doneCh <- Result{string(body), nil}
+}
+
+func (c *content) SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result) {
+	doneCh <- Result{"", nil}
+	return
+}
+
+func (c *content) ToProviderJSON() (*config.ProviderJSON, error) {
+	if c == nil {
+		return nil, errors.New("nil content receiver")
+	}
+	v := config.ContentV1{
+		Source: c.source,
+	}
+	pj := config.ProviderJSON{
+		Kind:  config.ProviderContentV1,
+		Value: v,
+	}
+	return &pj, nil
 }

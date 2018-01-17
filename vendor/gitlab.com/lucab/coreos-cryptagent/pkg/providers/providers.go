@@ -29,12 +29,14 @@ type Result struct {
 
 type PassGetter interface {
 	GetPassphrase(ctx context.Context, doneCh chan<- Result)
+	SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result)
+	ToProviderJSON() (*config.ProviderJSON, error)
 }
 
 func FromIgnitionV022(ks types.LuksKeyslot) (PassGetter, error) {
 	switch {
 	case ks.AzureVault != nil:
-		return nil, errors.New("unimplemented")
+		return azureVaultFromIgnitionV022(ks)
 	case ks.Content != nil:
 		return contentFromIgnitionV022(ks)
 	case ks.HcVault != nil:
@@ -51,7 +53,7 @@ func FromProviderJSON(cfg *config.ProviderJSON) (PassGetter, error) {
 
 	switch {
 	case cfg.Kind == config.ProviderAzureVaultV1:
-		return nil, errors.New("unimplemented")
+		return azureVaultFromConfigV1(cfg)
 	case cfg.Kind == config.ProviderContentV1:
 		return contentFromConfigV1(cfg)
 	case cfg.Kind == config.ProviderHcVaultV1:
