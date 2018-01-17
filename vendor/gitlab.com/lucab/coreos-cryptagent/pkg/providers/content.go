@@ -51,7 +51,7 @@ func contentFromConfigV1(cfg *config.ProviderJSON) (*content, error) {
 
 }
 
-func contentFromIgnitionV022(ks types.LuksKeyslot) (*content, error) {
+func contentFromIgnitionV220(ks types.LuksKeyslot) (*content, error) {
 	if ks.Content == nil {
 		return nil, errors.New("nil Content keyslot")
 	}

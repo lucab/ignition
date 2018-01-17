@@ -1,5 +1,5 @@
 hash: 2ee306c2bc0856a853540457ee6b2cf3116f5fb51bd0d168dfa51d3af98cfed7
-updated: 2018-01-17T13:40:13.191014609Z
+updated: 2018-01-17T14:00:24.031437729Z
 imports:
 - name: github.com/ajeddeloh/go-json
   version: 73d058cf8437a1989030afe571eeab9f90eebbbd
@@ -90,7 +90,7 @@ imports:
 - name: github.com/vmware/vmw-ovflib
   version: 1f217b9dc714d5f340d0a3cc3e9d49255c536f68
 - name: gitlab.com/lucab/coreos-cryptagent
-  version: abaaa507d9330329ec5f7be6fb05d50e814f43b1
+  version: fdda465a410f6cf9cca40a02fece5db6a8ca6106
   subpackages:
   - pkg/config
   - pkg/providers

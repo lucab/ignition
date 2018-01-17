@@ -33,12 +33,12 @@ type PassGetter interface {
 	ToProviderJSON() (*config.ProviderJSON, error)
 }
 
-func FromIgnitionV022(ks types.LuksKeyslot) (PassGetter, error) {
+func FromIgnitionV220(ks types.LuksKeyslot) (PassGetter, error) {
 	switch {
 	case ks.AzureVault != nil:
-		return azureVaultFromIgnitionV022(ks)
+		return azureVaultFromIgnitionV220(ks)
 	case ks.Content != nil:
-		return contentFromIgnitionV022(ks)
+		return contentFromIgnitionV220(ks)
 	case ks.HcVault != nil:
 		return nil, errors.New("unkwnown key")
 	}

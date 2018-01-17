@@ -52,7 +52,7 @@ func azureVaultFromConfigV1(cfg *config.ProviderJSON) (*azureVault, error) {
 	return &av, nil
 }
 
-func azureVaultFromIgnitionV022(ks types.LuksKeyslot) (*azureVault, error) {
+func azureVaultFromIgnitionV220(ks types.LuksKeyslot) (*azureVault, error) {
 	if ks.AzureVault == nil {
 		return nil, errors.New("nil azureVault keyslot")
 	}
