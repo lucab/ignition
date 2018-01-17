@@ -22,17 +22,23 @@ import (
 	"gitlab.com/lucab/coreos-cryptagent/pkg/config"
 )
 
+// Result represents the result of an async passphrase operation.
+// It contains either a password or an operational error.
 type Result struct {
 	Pass string
 	Err  error
 }
 
+// PassGetter is an interface that can be used by library consumer
+// without having direct access to each individual provider.
 type PassGetter interface {
 	GetPassphrase(ctx context.Context, doneCh chan<- Result)
 	SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result)
 	ToProviderJSON() (*config.ProviderJSON, error)
 }
 
+// FromIgnitionV220 constructs an opaque PassGetter from an ignition-2.2.0
+// keyslot configuration entry.
 func FromIgnitionV220(ks types.LuksKeyslot) (PassGetter, error) {
 	switch {
 	case ks.AzureVault != nil:
@@ -46,6 +52,8 @@ func FromIgnitionV220(ks types.LuksKeyslot) (PassGetter, error) {
 	return nil, errors.New("invalid keyslot")
 }
 
+// FromProviderJSON constructs and opaque PassGetter from any ProviderJSON
+// configuration file.
 func FromProviderJSON(cfg *config.ProviderJSON) (PassGetter, error) {
 	if cfg == nil {
 		return nil, errors.New("nil JSON provider configuration")

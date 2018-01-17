@@ -95,8 +95,7 @@ func (c *content) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 }
 
 func (c *content) SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result) {
-	doneCh <- Result{"", nil}
-	return
+	c.GetPassphrase(ctx, doneCh)
 }
 
 func (c *content) ToProviderJSON() (*config.ProviderJSON, error) {

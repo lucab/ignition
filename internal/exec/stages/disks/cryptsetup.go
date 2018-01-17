@@ -19,7 +19,9 @@
 package disks
 
 import (
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/coreos/ignition/config/types"
@@ -118,11 +120,16 @@ func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) 
 		return "", err
 	}
 
+	ciphertext, err := generateRandomASCIIString(63)
+	if err != nil {
+		return "", err
+	}
+
 	var res providers.Result
 	tries := 5
 	for tries > 0 {
 		ch := make(chan providers.Result, 1)
-		p.GetPassphrase(ctx, ch)
+		p.SetupPassphrase(ctx, ciphertext, ch)
 		res = <-ch
 		if res.Err == nil {
 			break
@@ -132,4 +139,21 @@ func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) 
 		time.Sleep(time.Duration(5) * time.Second)
 	}
 	return res.Pass, res.Err
+}
+
+func generateRandomASCIIString(length int) (string, error) {
+	result := ""
+	for {
+		if len(result) >= length {
+			return result, nil
+		}
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(127)))
+		if err != nil {
+			return "", err
+		}
+		n := num.Int64()
+		if n > 32 && n < 127 {
+			result += string(n)
+		}
+	}
 }

@@ -28,6 +28,7 @@ type azureVault struct {
 	baseURL    string
 	keyName    string
 	keyVersion string
+	ciphertext string
 }
 
 func azureVaultFromConfigV1(cfg *config.ProviderJSON) (*azureVault, error) {
@@ -37,16 +38,18 @@ func azureVaultFromConfigV1(cfg *config.ProviderJSON) (*azureVault, error) {
 	if cfg.Kind != config.ProviderAzureVaultV1 {
 		return nil, fmt.Errorf("expected kind %q, got %q", config.ProviderContentV1, cfg.Kind)
 	}
-
 	value, ok := cfg.Value.(config.AzureVaultV1)
 	if !ok {
-		return nil, errors.New("not a ContentV1 value")
+		return nil, errors.New("not an AzureVaultV1 value")
 	}
-
+	if value.Ciphertext == "" {
+		return nil, errors.New("missing ciphertext")
+	}
 	av := azureVault{
 		baseURL:    value.BaseURL,
 		keyName:    value.KeyName,
 		keyVersion: value.KeyVersion,
+		ciphertext: value.Ciphertext,
 	}
 
 	return &av, nil
@@ -61,6 +64,7 @@ func azureVaultFromIgnitionV220(ks types.LuksKeyslot) (*azureVault, error) {
 		baseURL:    ks.AzureVault.BaseURL,
 		keyName:    ks.AzureVault.KeyName,
 		keyVersion: *ks.AzureVault.KeyVersion,
+		ciphertext: "",
 	}
 	return &av, nil
 }
@@ -76,12 +80,10 @@ func (a *azureVault) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 	}
 
 	fmt.Println("before decrypt")
-
-	pass := "fixedkey"
 	cl := keyvault.New()
 	params := keyvault.KeyOperationsParameters{
 		Algorithm: keyvault.RSAOAEP256,
-		Value:     &pass,
+		Value:     &a.ciphertext,
 	}
 	res, err := cl.Decrypt(ctx, a.baseURL, a.keyName, a.keyVersion, params)
 	fmt.Println("after decrypt")
@@ -94,7 +96,29 @@ func (a *azureVault) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 }
 
 func (a *azureVault) SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result) {
-	doneCh <- Result{"", nil}
+	if a == nil {
+		doneCh <- Result{"", errors.New("nil azureVault receiver")}
+		return
+	}
+	if a.baseURL == "" {
+		doneCh <- Result{"", errors.New("missing base URL")}
+		return
+	}
+
+	fmt.Println("before encrypt")
+	cl := keyvault.New()
+	params := keyvault.KeyOperationsParameters{
+		Algorithm: keyvault.RSAOAEP256,
+		Value:     &cleartext,
+	}
+	res, err := cl.Encrypt(ctx, a.baseURL, a.keyName, a.keyVersion, params)
+	fmt.Println("after encrypt")
+	if err != nil {
+		doneCh <- Result{"", err}
+		return
+	}
+
+	doneCh <- Result{*res.Result, nil}
 	return
 }
 

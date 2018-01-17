@@ -18,4 +18,5 @@ type AzureVaultV1 struct {
 	BaseURL    string `json:"baseURL"`
 	KeyName    string `json:"keyName"`
 	KeyVersion string `json:"keyVersion"`
+	Ciphertext string `json:"ciphertext"`
 }
