@@ -23,23 +23,33 @@ import (
 )
 
 // Result represents the result of an async passphrase operation.
-// It contains either a password or an operational error.
+// It contains either an Ok string resulr or an operational Err error.
 type Result struct {
-	Pass string
-	Err  error
+	Ok  string
+	Err error
 }
 
-// PassGetter is an interface that can be used by library consumer
+// PassProvider is an interface that can be used by library consumer
 // without having direct access to each individual provider.
-type PassGetter interface {
-	GetPassphrase(ctx context.Context, doneCh chan<- Result)
-	SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result)
+type PassProvider interface {
+	// GetCleartext returns the cleartext passphrase for a volume.
+	// It may entail multiple calls to a remote provider in order
+	// to unwrap/decrypt a local ciphertext.
+	GetCleartext(ctx context.Context, doneCh chan<- Result)
+	// SetCiphertext sets the ciphertext, so that it can be later serialized.
+	SetCiphertext(string)
+	// Encrypt encrypts an external cleartext.
+	Encrypt(ctx context.Context, cleartext string, doneCh chan<- Result)
+	// It may entail multiple calls to a remote provider in order
+	// to wrap/crypt the cleartext.
 	ToProviderJSON() (*config.ProviderJSON, error)
+	// CanEncrypt signals whether the provider can encrypt external cleartext.
+	CanEncrypt() bool
 }
 
-// FromIgnitionV220 constructs an opaque PassGetter from an ignition-2.2.0
+// FromIgnitionV220 constructs an opaque PassProvider from an ignition-2.2.0
 // keyslot configuration entry.
-func FromIgnitionV220(ks types.LuksKeyslot) (PassGetter, error) {
+func FromIgnitionV220(ks types.LuksKeyslot) (PassProvider, error) {
 	switch {
 	case ks.AzureVault != nil:
 		return azureVaultFromIgnitionV220(ks)
@@ -52,9 +62,9 @@ func FromIgnitionV220(ks types.LuksKeyslot) (PassGetter, error) {
 	return nil, errors.New("invalid keyslot")
 }
 
-// FromProviderJSON constructs and opaque PassGetter from any ProviderJSON
+// FromProviderJSON constructs and opaque PassProvider from any ProviderJSON
 // configuration file.
-func FromProviderJSON(cfg *config.ProviderJSON) (PassGetter, error) {
+func FromProviderJSON(cfg *config.ProviderJSON) (PassProvider, error) {
 	if cfg == nil {
 		return nil, errors.New("nil JSON provider configuration")
 	}

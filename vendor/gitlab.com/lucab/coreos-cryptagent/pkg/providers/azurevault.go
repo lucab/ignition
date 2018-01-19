@@ -69,13 +69,17 @@ func azureVaultFromIgnitionV220(ks types.LuksKeyslot) (*azureVault, error) {
 	return &av, nil
 }
 
-func (a *azureVault) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
+func (a *azureVault) GetCleartext(ctx context.Context, doneCh chan<- Result) {
 	if a == nil {
 		doneCh <- Result{"", errors.New("nil azureVault receiver")}
 		return
 	}
 	if a.baseURL == "" {
 		doneCh <- Result{"", errors.New("missing base URL")}
+		return
+	}
+	if a.ciphertext == "" {
+		doneCh <- Result{"", errors.New("empty ciphertext")}
 		return
 	}
 
@@ -95,13 +99,17 @@ func (a *azureVault) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 	doneCh <- Result{*res.Result, nil}
 }
 
-func (a *azureVault) SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result) {
+func (a *azureVault) Encrypt(ctx context.Context, cleartext string, doneCh chan<- Result) {
 	if a == nil {
 		doneCh <- Result{"", errors.New("nil azureVault receiver")}
 		return
 	}
 	if a.baseURL == "" {
 		doneCh <- Result{"", errors.New("missing base URL")}
+		return
+	}
+	if cleartext == "" {
+		doneCh <- Result{"", errors.New("empty cleartext")}
 		return
 	}
 
@@ -136,4 +144,12 @@ func (a *azureVault) ToProviderJSON() (*config.ProviderJSON, error) {
 		Value: v,
 	}
 	return &pj, nil
+}
+
+func (a *azureVault) CanEncrypt() bool {
+	return true
+}
+
+func (a *azureVault) SetCiphertext(ciphertext string) {
+	a.ciphertext = ciphertext
 }

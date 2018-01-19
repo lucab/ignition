@@ -64,7 +64,7 @@ func contentFromIgnitionV220(ks types.LuksKeyslot) (*content, error) {
 	return &c, nil
 }
 
-func (c *content) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
+func (c *content) GetCleartext(ctx context.Context, doneCh chan<- Result) {
 	if c == nil {
 		doneCh <- Result{"", errors.New("nil content receiver")}
 		return
@@ -73,7 +73,7 @@ func (c *content) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 		doneCh <- Result{"", errors.New("missing source URL")}
 		return
 	}
-	logrus.Debugf("content: fetching from %q", c.source)
+	logrus.Debugf("content: fetching from %s", c.source)
 	resp, err := http.Get(c.source)
 	if err != nil {
 		doneCh <- Result{"", err}
@@ -94,8 +94,8 @@ func (c *content) GetPassphrase(ctx context.Context, doneCh chan<- Result) {
 	doneCh <- Result{string(body), nil}
 }
 
-func (c *content) SetupPassphrase(ctx context.Context, cleartext string, doneCh chan<- Result) {
-	c.GetPassphrase(ctx, doneCh)
+func (c *content) Encrypt(ctx context.Context, cleartext string, doneCh chan<- Result) {
+	doneCh <- Result{"", errors.New("content does not support encryption")}
 }
 
 func (c *content) ToProviderJSON() (*config.ProviderJSON, error) {
@@ -110,4 +110,11 @@ func (c *content) ToProviderJSON() (*config.ProviderJSON, error) {
 		Value: v,
 	}
 	return &pj, nil
+}
+
+func (c *content) CanEncrypt() bool {
+	return false
+}
+
+func (c *content) SetCiphertext(ciphertext string) {
 }

@@ -1,5 +1,5 @@
 hash: 2ee306c2bc0856a853540457ee6b2cf3116f5fb51bd0d168dfa51d3af98cfed7
-updated: 2018-01-17T14:46:40.437486868Z
+updated: 2018-01-19T16:02:06.335643974Z
 imports:
 - name: github.com/ajeddeloh/go-json
   version: 73d058cf8437a1989030afe571eeab9f90eebbbd
@@ -38,7 +38,7 @@ imports:
   subpackages:
   - services/keyvault/2016-10-01/keyvault
 - name: github.com/Azure/go-autorest
-  version: 6311d7a76f54cf2b6dea03d737d9bd9a6022ac5f
+  version: 3c16bcd9ea019819c1d7c14055ed74f845f44a8a
   subpackages:
   - autorest
   - autorest/adal
@@ -90,7 +90,7 @@ imports:
 - name: github.com/vmware/vmw-ovflib
   version: 1f217b9dc714d5f340d0a3cc3e9d49255c536f68
 - name: gitlab.com/lucab/coreos-cryptagent
-  version: fc600c330c15ea0932020d64d34ee5e34d9e3444
+  version: 9628a9f7d3671648f56f637b2796628404583965
   subpackages:
   - pkg/config
   - pkg/providers
