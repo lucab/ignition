@@ -19,38 +19,52 @@
 package disks
 
 import (
+	"bufio"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/coreos/go-systemd/unit"
 	"github.com/coreos/ignition/config/types"
 	"github.com/martinjungblut/cryptsetup"
+	"gitlab.com/lucab/coreos-cryptagent/pkg/config"
 	"gitlab.com/lucab/coreos-cryptagent/pkg/providers"
 	"golang.org/x/net/context"
 )
 
-// createCryptsetup creates cryptsetup partitions described in config.Storage.Encryption
+type contextKey string
+
+var configDir = filepath.Join(os.TempDir(), "ignition-cryptagent")
+
+// createEncryption creates all the encrypted cryptsetup volumes
+// described in config.Storage.Encryption.
 //
-// This assumes that cryptsetup config has already been validated at parsing time.
-func (s stage) createCryptsetup(config types.Config) error {
+// This assumes that storage.encryption configuration has already been
+// validated at parsing time.
+func (s stage) createEncryption(ctx context.Context, config types.Config) error {
 	encCfg := config.Storage.Encryption
 	if len(encCfg) == 0 {
 		return nil
 	}
-	s.Logger.PushPrefix("createCryptsetup")
+	s.Logger.PushPrefix("createEncryption")
 	defer s.Logger.PopPrefix()
 
 	devs := []string{}
 	for _, entry := range config.Storage.Encryption {
 		devs = append(devs, entry.Device)
 	}
-	if err := s.waitOnDevicesAndCreateAliases(devs, "crypsetup"); err != nil {
+	if err := s.waitOnDevicesAndCreateAliases(devs, "encryption"); err != nil {
 		return err
 	}
 
 	for _, encEntry := range encCfg {
-		if err := s.createCryptsetupEntry(encEntry); err != nil {
+		encEntryCtx := context.WithValue(ctx, contextKey("volName"), encEntry.Name)
+		// TODO(lucab): consider running these in parallel (maybe?)
+		if err := s.createEncryptedEntry(encEntryCtx, encEntry); err != nil {
 			return err
 		}
 	}
@@ -58,60 +72,153 @@ func (s stage) createCryptsetup(config types.Config) error {
 	return nil
 }
 
-// createCryptsetupEntry creates a single cryptsetup partition entry.
-func (s stage) createCryptsetupEntry(encEntry types.Encryption) error {
-	ctx := context.Background()
-	// Fetch keyslots passphrases
-	keys := []string{}
-	for i, slot := range encEntry.KeySlots {
-		key, err := s.fetchKeyslotPass(ctx, slot)
-		if err != nil {
-			return fmt.Errorf("fetching keyslot passphrase %d for %q: %v", i, encEntry.Name, err)
-		}
-		keys = append(keys, key)
-		// TODO(lucab): remove
-		break
+// createEncryptedEntry creates a single cryptsetup volume entry.
+func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encryption) error {
+	escaped := unit.UnitNamePathEscape(encEntry.Device)
+	volumeDir := filepath.Join(configDir, escaped)
+	if err := os.MkdirAll(volumeDir, 0400); err != nil {
+		return fmt.Errorf("failed to create directory %s: %v", volumeDir, err)
 	}
-
-	// Initialize device
 	// TODO(lucab): make this configurable
 	cryptohashKind := "sha256"
-	cypherKind := "aes"
-	cypherMode := "xts-plain64"
+	cipherKind := "aes"
+	cipherMode := "xts-plain64"
 	params := cryptsetup.LUKSParams{
 		Hash:           cryptohashKind,
 		Data_alignment: 0,
 		Data_device:    "",
 	}
-	err, device := cryptsetup.Init(encEntry.Device)
+	volConf, err := agentVolumeConfig(encEntry)
 	if err != nil {
-		return fmt.Errorf("unable to initialize cryptsetup on device %q: %v", encEntry.Device, err)
+		return fmt.Errorf("failed to assemble volume config for %s: %v", encEntry.Name, err)
 	}
-	err = device.FormatLUKS(cypherKind, cypherMode, "", "", 256/8, params)
+	if err := s.recordVolumeConfig(volConf, volumeDir); err != nil {
+		return err
+	}
+	device, err := s.createEncryptedVolume(ctx, encEntry, params, cipherKind, cipherMode)
 	if err != nil {
-		return fmt.Errorf("unable to format device %q for cryptsetup: %v", encEntry.Device, err)
+		return err
 	}
 
-	// Add passphrases to keyslots
-	for i, key := range keys {
-		err = device.AddPassphraseToKeyslot(i, "", key)
+	// Fetch keyslots passphrases
+	keys := make([]string, len(encEntry.KeySlots))
+	for i, slot := range encEntry.KeySlots {
+		key, err := s.fetchKeyslotPass(ctx, slot)
 		if err != nil {
-			return fmt.Errorf("error setting keyslot %d passphrase for %q: %v", i, encEntry.Name, err)
+			return fmt.Errorf("fetching keyslot passphrase %d for %s: %v", i, encEntry.Name, err)
 		}
+		keys = append(keys, key)
+		if err := s.recordSlotConfig(slot, i, key, volumeDir); err != nil {
+			return err
+		}
+		if err = device.AddPassphraseToKeyslot(i, "", key); err != nil {
+			return fmt.Errorf("error setting keyslot %d passphrase for %s: %v", i, encEntry.Name, err)
+		}
+		// TODO(lucab): remove when adding support for multiple keyslots
+		break
 	}
 
 	// Leave the device in an active state
 	if err := device.Load(); err != nil {
-		return fmt.Errorf("error loading cryptsetup data from device %q: %v", encEntry.Device, err)
+		return fmt.Errorf("error loading cryptsetup data from device %s: %v", encEntry.Device, err)
 	}
+	active := false
 	for i, key := range keys {
 		err = device.Activate(encEntry.Name, i, key, 0)
 		if err == nil {
-			return nil
+			active = true
+			break
 		}
 	}
 
-	return fmt.Errorf("unable to activate cryptsetup entry %q", encEntry.Name)
+	if !active {
+		return fmt.Errorf("unable to activate cryptsetup entry %s", encEntry.Name)
+	}
+	return nil
+}
+
+func (s stage) recordVolumeConfig(volConf *config.VolumeJSON, volumeDir string) error {
+	volumePath := filepath.Join(volumeDir, "volume.json")
+	vfp, err := os.OpenFile(volumePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
+	if err != nil {
+		return err
+	}
+	defer vfp.Close()
+	vbufwr := bufio.NewWriter(vfp)
+	if err := json.NewEncoder(vbufwr).Encode(volConf); err != nil {
+		return fmt.Errorf("failed to write %s: %v", volumePath, err)
+	}
+	if err := vbufwr.Flush(); err != nil {
+		return fmt.Errorf("failed to flush %s: %v", volumePath, err)
+	}
+
+	return nil
+}
+
+func (s stage) recordSlotConfig(ks types.LuksKeyslot, index int, key string, volumeDir string) error {
+	slotConf, err := agentSlotProviderConfig(ks, key)
+	if err != nil {
+		return fmt.Errorf("failed to assemble slot config: %v", err)
+	}
+	slotPath := filepath.Join(volumeDir, fmt.Sprintf("%d.json", index))
+	sfp, err := os.OpenFile(slotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
+	if err != nil {
+		return err
+	}
+	defer sfp.Close()
+	sbufwr := bufio.NewWriter(sfp)
+	if err := json.NewEncoder(sbufwr).Encode(slotConf); err != nil {
+		return fmt.Errorf("failed to write %s: %v", slotPath, err)
+	}
+	if err := sbufwr.Flush(); err != nil {
+		return fmt.Errorf("failed to flush %s: %v", slotPath, err)
+	}
+
+	return nil
+}
+
+func agentVolumeConfig(e types.Encryption) (*config.VolumeJSON, error) {
+	cs := config.CryptsetupV1{
+		Name:           e.Name,
+		Device:         e.Device,
+		DisableDiscard: &e.DisableDiscard,
+	}
+
+	vol := config.VolumeJSON{
+		Kind:  config.VolumeCryptsetupV1,
+		Value: cs,
+	}
+
+	return &vol, nil
+}
+
+func agentSlotProviderConfig(l types.LuksKeyslot, key string) (*config.ProviderJSON, error) {
+	p, err := providers.FromIgnitionV220(l)
+	if err != nil {
+		return nil, err
+	}
+	p.SetCiphertext(key)
+
+	pj, err := p.ToProviderJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return pj, nil
+}
+
+func (s stage) createEncryptedVolume(ctx context.Context, encEntry types.Encryption, params cryptsetup.LUKSParams, cipherKind string, cipherMode string) (*cryptsetup.CryptDevice, error) {
+	// Initialize device
+	err, device := cryptsetup.Init(encEntry.Device)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize cryptsetup on device %s: %v", encEntry.Device, err)
+	}
+	err = device.FormatLUKS(cipherKind, cipherMode, "", "", 256/8, params)
+	if err != nil {
+		return nil, fmt.Errorf("unable to format device %q for cryptsetup: %v", encEntry.Device, err)
+	}
+
+	return device, nil
 }
 
 func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) (string, error) {
@@ -120,16 +227,35 @@ func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) 
 		return "", err
 	}
 
-	ciphertext, err := generateRandomASCIIString(63)
-	if err != nil {
-		return "", err
+	if p.CanEncrypt() {
+		var res providers.Result
+		pass, err := generateRandomASCIIString(63)
+		if err != nil {
+			return "", err
+		}
+		tries := 5
+		for tries > 0 {
+			ch := make(chan providers.Result, 1)
+			p.Encrypt(ctx, pass, ch)
+			res = <-ch
+			if res.Err == nil {
+				break
+			}
+			tries--
+			s.Logger.Debug("retrying in 5s")
+			time.Sleep(time.Duration(5) * time.Second)
+		}
+		if res.Err != nil {
+			return "", res.Err
+		}
+		p.SetCiphertext(res.Ok)
 	}
 
 	var res providers.Result
 	tries := 5
 	for tries > 0 {
 		ch := make(chan providers.Result, 1)
-		p.SetupPassphrase(ctx, ciphertext, ch)
+		p.GetCleartext(ctx, ch)
 		res = <-ch
 		if res.Err == nil {
 			break
@@ -138,7 +264,7 @@ func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) 
 		s.Logger.Debug("retrying in 5s")
 		time.Sleep(time.Duration(5) * time.Second)
 	}
-	return res.Pass, res.Err
+	return res.Ok, res.Err
 }
 
 func generateRandomASCIIString(length int) (string, error) {

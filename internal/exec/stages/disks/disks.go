@@ -31,6 +31,7 @@ import (
 	"github.com/coreos/ignition/internal/resource"
 	"github.com/coreos/ignition/internal/sgdisk"
 	"github.com/coreos/ignition/internal/systemd"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -72,6 +73,7 @@ func (stage) Name() string {
 }
 
 func (s stage) Run(config types.Config) bool {
+	ctx := context.Background()
 	// Interacting with disks/paritions/raids/filesystems in general can cause
 	// udev races. If we do not need to  do anything, we also do not need to
 	// do the udevadm settle and can just return here.
@@ -91,7 +93,7 @@ func (s stage) Run(config types.Config) bool {
 		return false
 	}
 
-	if err := s.createCryptsetup(config); err != nil {
+	if err := s.createEncryption(ctx, config); err != nil {
 		s.Logger.Crit("failed to create encrypted volumes: %v", err)
 		return false
 	}

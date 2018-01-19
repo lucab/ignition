@@ -15,8 +15,6 @@
 package files
 
 import (
-	"bufio"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -33,7 +31,6 @@ import (
 	"github.com/coreos/ignition/internal/resource"
 	internalUtil "github.com/coreos/ignition/internal/util"
 	"gitlab.com/lucab/coreos-cryptagent/pkg/config"
-	"gitlab.com/lucab/coreos-cryptagent/pkg/providers"
 )
 
 const (
@@ -73,8 +70,8 @@ func (stage) Name() string {
 }
 
 func (s stage) Run(config types.Config) bool {
-	if err := s.createCryptsetup(config); err != nil {
-		s.Logger.Crit("failed to configure cryptsetup: %v", err)
+	if err := s.createCryptagentConfig(config); err != nil {
+		s.Logger.Crit("failed to create coreos-cryptagent configuration: %v", err)
 		return false
 	}
 
@@ -500,90 +497,29 @@ func (s stage) createGroups(config types.Config) error {
 	return nil
 }
 
-// createCryptsetup creates all cryptsetup-related assets required by config.Storage.Encryption.
-func (s stage) createCryptsetup(cfg types.Config) error {
+// createCryptagentConfig creates all assets required by coreos-cryptagent.
+func (s stage) createCryptagentConfig(cfg types.Config) error {
 	if len(cfg.Storage.Encryption) == 0 {
 		return nil
 	}
-	s.Logger.PushPrefix("createCryptsetup")
+	s.Logger.PushPrefix("createCryptagentConfig")
 	defer s.Logger.PopPrefix()
 
 	if err := os.MkdirAll(config.ConfigDir, 0400); err != nil {
 		return fmt.Errorf("failed to create directory %s: %v", config.ConfigDir, err)
 	}
 
+	var tempDir = filepath.Join(os.TempDir(), "ignition-cryptagent")
 	for _, e := range cfg.Storage.Encryption {
+		// TODO(lucab): mv dir
+		_ = e
 		escaped := unit.UnitNamePathEscape(e.Device)
-		volumeDir := filepath.Join(config.ConfigDir, escaped)
-		if err := os.MkdirAll(volumeDir, 0400); err != nil {
-			return fmt.Errorf("failed to create directory %s: %v", config.ConfigDir, err)
-		}
-
-		volConf, err := agentVolumeConfig(e)
-		if err != nil {
-			return fmt.Errorf("failed to assemble volume config for %q: %v", e.Device, err)
-		}
-		volumePath := filepath.Join(volumeDir, "volume.json")
-		vfp, err := os.OpenFile(volumePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
-		if err != nil {
+		oldPath := filepath.Join(tempDir, escaped)
+		newPath := filepath.Join(config.ConfigDir, escaped)
+		if err := os.Rename(oldPath, newPath); err != nil {
 			return err
-		}
-		defer vfp.Close()
-		vbufwr := bufio.NewWriter(vfp)
-		if err := json.NewEncoder(vbufwr).Encode(volConf); err != nil {
-			return fmt.Errorf("failed to write %q: %v", volumePath, err)
-		}
-		if err := vbufwr.Flush(); err != nil {
-			return fmt.Errorf("failed to flush %q: %v", volumePath, err)
-		}
-
-		slotConf, err := agentSlotProviderConfig(e.KeySlots[0])
-		if err != nil {
-			return fmt.Errorf("failed to assemble slot config for %q: %v", e.Device, err)
-		}
-		slotPath := filepath.Join(config.ConfigDir, escaped, "0.json")
-		sfp, err := os.OpenFile(slotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0400)
-		if err != nil {
-			return err
-		}
-		defer sfp.Close()
-		sbufwr := bufio.NewWriter(sfp)
-		if err := json.NewEncoder(sbufwr).Encode(slotConf); err != nil {
-			return fmt.Errorf("failed to write %q: %v", volumePath, err)
-		}
-		if err := sbufwr.Flush(); err != nil {
-			return fmt.Errorf("failed to flush %q: %v", volumePath, err)
 		}
 	}
 
 	return nil
-}
-
-func agentVolumeConfig(e types.Encryption) (*config.VolumeJSON, error) {
-	cs := config.CryptsetupV1{
-		Name:           e.Name,
-		Device:         e.Device,
-		DisableDiscard: &e.DisableDiscard,
-	}
-
-	vol := config.VolumeJSON{
-		Kind:  config.VolumeCryptsetupV1,
-		Value: cs,
-	}
-
-	return &vol, nil
-}
-
-func agentSlotProviderConfig(l types.LuksKeyslot) (*config.ProviderJSON, error) {
-	p, err := providers.FromIgnitionV220(l)
-	if err != nil {
-		return nil, err
-	}
-
-	pj, err := p.ToProviderJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	return pj, nil
 }
