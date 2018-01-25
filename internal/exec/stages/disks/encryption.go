@@ -128,6 +128,8 @@ func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encrypti
 		if err == nil {
 			active = true
 			break
+		} else {
+			return fmt.Errorf("activate keyslot 0 failed: %s", err)
 		}
 	}
 
