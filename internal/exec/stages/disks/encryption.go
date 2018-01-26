@@ -26,6 +26,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/coreos/go-systemd/unit"
@@ -60,6 +61,7 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 	if err := s.waitOnDevicesAndCreateAliases(devs, "encryption"); err != nil {
 		return err
 	}
+	s.waitOnEntropyAvailable(256, 5, 5)
 
 	for _, encEntry := range encCfg {
 		encEntryCtx := context.WithValue(ctx, contextKey("volName"), encEntry.Name)
@@ -70,6 +72,34 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 	}
 
 	return nil
+}
+
+func (s stage) waitOnEntropyAvailable(bytes int, tries int, pause int) {
+	avail := -1
+	for tries > 0 {
+		if avail > 0 && avail < bytes {
+			s.Logger.Info("Not enough entropy, retrying in %ds, currently available: %d", pause, avail)
+			time.Sleep(time.Duration(pause) * time.Second)
+		}
+		fp, err := os.Open("/proc/sys/kernel/random/entropy_avail")
+		if err != nil {
+			continue
+		}
+		defer fp.Close()
+		s, err := bufio.NewReader(fp).ReadString('\n')
+		if err != nil {
+			continue
+		}
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			continue
+		}
+		avail = n
+		if avail >= bytes {
+			break
+		}
+	}
+	return
 }
 
 // createEncryptedEntry creates a single cryptsetup volume entry.
