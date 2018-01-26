@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-systemd/unit"
@@ -76,26 +77,29 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 
 func (s stage) waitOnEntropyAvailable(bytes int, tries int, pause int) {
 	avail := -1
-	for tries > 0 {
-		if avail > 0 && avail < bytes {
+	for tries >= 0 {
+		if avail >= 0 && avail < bytes {
 			s.Logger.Info("Not enough entropy, retrying in %ds, currently available: %d", pause, avail)
 			time.Sleep(time.Duration(pause) * time.Second)
 		}
+		avail = 0
+		tries--
 		fp, err := os.Open("/proc/sys/kernel/random/entropy_avail")
 		if err != nil {
 			continue
 		}
 		defer fp.Close()
-		s, err := bufio.NewReader(fp).ReadString('\n')
+		valueStr, err := bufio.NewReader(fp).ReadString('\n')
 		if err != nil {
 			continue
 		}
-		n, err := strconv.Atoi(s)
+		n, err := strconv.Atoi(strings.TrimSpace(valueStr))
 		if err != nil {
 			continue
 		}
 		avail = n
 		if avail >= bytes {
+			s.Logger.Info("System has enough entropy (%d bytes), proceeding", avail)
 			break
 		}
 	}
@@ -131,24 +135,28 @@ func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encrypti
 	}
 
 	// Fetch keyslots passphrases
-	keys := make([]string, len(encEntry.KeySlots))
+	keys := []string{}
 	for i, slot := range encEntry.KeySlots {
 		key, err := s.fetchKeyslotPass(ctx, slot)
 		if err != nil {
 			return fmt.Errorf("fetching keyslot passphrase %d for %s: %v", i, encEntry.Name, err)
 		}
-		fmt.Printf("fetched key %s", key)
+		fmt.Printf("fetched key %s\n", key)
 		keys = append(keys, key)
+		fmt.Printf("keys array: %#v\n", keys)
 		if err := s.recordSlotConfig(slot, i, key, volumeDir); err != nil {
 			return err
 		}
+		fmt.Printf("recorded key %s\n", key)
 		if err = device.AddPassphraseToKeyslot(i, "", key); err != nil {
 			return fmt.Errorf("error setting keyslot %d passphrase for %s: %v", i, encEntry.Name, err)
 		}
+		fmt.Printf("added key %s\n", key)
 		// TODO(lucab): remove when adding support for multiple keyslots
 		break
 	}
 
+	fmt.Printf("total keys array: %#v\n", keys)
 	// Leave the device in an active state
 	if err := device.Load(); err != nil {
 		return fmt.Errorf("error loading cryptsetup data from device %s: %v", encEntry.Device, err)
