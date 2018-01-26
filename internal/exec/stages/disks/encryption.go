@@ -107,6 +107,7 @@ func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encrypti
 		if err != nil {
 			return fmt.Errorf("fetching keyslot passphrase %d for %s: %v", i, encEntry.Name, err)
 		}
+		fmt.Printf("fetched key %s", key)
 		keys = append(keys, key)
 		if err := s.recordSlotConfig(slot, i, key, volumeDir); err != nil {
 			return err
@@ -124,12 +125,13 @@ func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encrypti
 	}
 	active := false
 	for i, key := range keys {
+		fmt.Printf("activating %d with key %s", i, key)
 		err = device.Activate(encEntry.Name, i, key, 0)
 		if err == nil {
 			active = true
 			break
 		} else {
-			return fmt.Errorf("activate keyslot 0 failed: %s", err)
+			return fmt.Errorf("failed to activate keyslot %d with key %s: %s", i, key, err)
 		}
 	}
 
@@ -244,7 +246,7 @@ func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) 
 				break
 			}
 			tries--
-			s.Logger.Debug("retrying in 5s")
+			s.Logger.Info("Transient error, retrying in 5s, current failure: %s ", res.Err)
 			time.Sleep(time.Duration(5) * time.Second)
 		}
 		if res.Err != nil {
@@ -263,9 +265,10 @@ func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) 
 			break
 		}
 		tries--
-		s.Logger.Debug("retrying in 5s")
+		s.Logger.Info("Transient error, retrying in 5s, current failure: %s ", res.Err)
 		time.Sleep(time.Duration(5) * time.Second)
 	}
+	s.Logger.Info("fetched slot key %s\n", res.Ok)
 	return res.Ok, res.Err
 }
 
