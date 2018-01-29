@@ -25,8 +25,8 @@ type VolumeKind uint
 const (
 	// VolumeInvalid is the default invalid value for volume kind.
 	VolumeInvalid VolumeKind = iota
-	// VolumeCryptsetupV1 represents a cryptsetup (v1) volume config.
-	VolumeCryptsetupV1
+	// VolumeCryptsetupLUKS1V1 represents a cryptsetup-LUKS1 (v1) volume config.
+	VolumeCryptsetupLUKS1V1
 )
 
 // UnmarshalJSON is part of the json.Unmarshaler interface.
@@ -36,8 +36,8 @@ func (vk *VolumeKind) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	switch s {
-	case "CryptsetupV1":
-		*vk = VolumeCryptsetupV1
+	case "CryptsetupLUKSV1":
+		*vk = VolumeCryptsetupLUKS1V1
 	default:
 		return errors.New("unknown kind")
 	}
@@ -49,8 +49,8 @@ func (vk *VolumeKind) UnmarshalJSON(b []byte) error {
 func (vk *VolumeKind) MarshalJSON() ([]byte, error) {
 	var s string
 	switch *vk {
-	case VolumeCryptsetupV1:
-		s = "CryptsetupV1"
+	case VolumeCryptsetupLUKS1V1:
+		s = "CryptsetupLUKSV1"
 	default:
 		return nil, errors.New("unknown kind")
 	}
@@ -58,6 +58,7 @@ func (vk *VolumeKind) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s)
 }
 
+// ProviderKind is an enum of provider kinds.
 type ProviderKind int
 
 const (
@@ -83,7 +84,7 @@ func (vk *ProviderKind) UnmarshalJSON(b []byte) error {
 	case "AzureVaultV1":
 		*vk = ProviderAzureVaultV1
 	case "HcVaultV1":
-		return errors.New("unimplemented")
+		return errors.New("hc-vault unimplemented")
 	default:
 		return errors.New("unknown kind")
 	}
@@ -100,7 +101,7 @@ func (vk *ProviderKind) MarshalJSON() ([]byte, error) {
 	case ProviderAzureVaultV1:
 		s = "AzureVaultV1"
 	case ProviderHcVaultV1:
-		return nil, errors.New("unimplemented")
+		return nil, errors.New("hc-vault unimplemented")
 	default:
 		return nil, errors.New("unknown kind")
 	}

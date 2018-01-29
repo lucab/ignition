@@ -19,11 +19,13 @@ import (
 	"errors"
 )
 
+// ProviderJSON is the top-level configuration container for a provider.
 type ProviderJSON struct {
 	Kind  ProviderKind `json:"kind"`
 	Value interface{}  `json:"value"`
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface.
 func (pj *ProviderJSON) UnmarshalJSON(b []byte) error {
 	type tmps struct {
 		Kind  ProviderKind     `json:"kind"`
@@ -49,6 +51,8 @@ func (pj *ProviderJSON) UnmarshalJSON(b []byte) error {
 		}
 		pj.Kind = tmp.Kind
 		pj.Value = v
+	case ProviderHcVaultV1:
+		return errors.New("hc-vault unimplemented")
 	default:
 		return errors.New("unknown kind")
 	}

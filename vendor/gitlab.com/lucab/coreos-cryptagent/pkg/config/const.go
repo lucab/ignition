@@ -24,5 +24,6 @@ const (
 )
 
 var (
-	ConfigDir = filepath.Join(BaseDir, "dev")
+	// DevConfigDir is the base directory for devices/volumes configuration files.
+	DevConfigDir = filepath.Join(BaseDir, "dev")
 )

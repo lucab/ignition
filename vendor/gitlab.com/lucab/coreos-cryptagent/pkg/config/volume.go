@@ -19,11 +19,13 @@ import (
 	"errors"
 )
 
+// VolumeJSON is the top-level configuration container for an encrypted volume.
 type VolumeJSON struct {
 	Kind  VolumeKind  `json:"kind"`
 	Value interface{} `json:"value"`
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface.
 func (vj *VolumeJSON) UnmarshalJSON(b []byte) error {
 	type tmps struct {
 		Kind  VolumeKind       `json:"kind"`
@@ -35,8 +37,8 @@ func (vj *VolumeJSON) UnmarshalJSON(b []byte) error {
 	}
 
 	switch tmp.Kind {
-	case VolumeCryptsetupV1:
-		var v CryptsetupV1
+	case VolumeCryptsetupLUKS1V1:
+		var v CryptsetupLUKS1V1
 		if err := json.Unmarshal(*tmp.Value, &v); err != nil {
 			return err
 		}
@@ -50,7 +52,8 @@ func (vj *VolumeJSON) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type CryptsetupV1 struct {
+// CryptsetupLUKS1V1 represents a cryptsetup-LUKS1 volume.
+type CryptsetupLUKS1V1 struct {
 	Name           string `json:"name"`
 	Device         string `json:"device"`
 	DisableDiscard *bool  `json:"disableDiscard,omitempty"`

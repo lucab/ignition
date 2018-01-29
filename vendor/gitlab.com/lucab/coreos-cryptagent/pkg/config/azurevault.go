@@ -14,9 +14,18 @@
 
 package config
 
+// AzureVaultV1 is the v1 configuration for an Azure Vault provider.
 type AzureVaultV1 struct {
-	BaseURL    string `json:"baseURL"`
-	KeyName    string `json:"keyName"`
-	KeyVersion string `json:"keyVersion"`
-	Ciphertext string `json:"ciphertext"`
+	BaseURL             string                    `json:"baseURL"`
+	EncryptionAlgorithm string                    `json:"encryptionAlgorithm"`
+	KeyName             string                    `json:"keyName"`
+	KeyVersion          string                    `json:"keyVersion"`
+	Ciphertext          string                    `json:"ciphertext"`
+	PasswordAuth        *AzureVaultV1PasswordAuth `json:"passwordAuth"`
+}
+
+// AzureVaultV1PasswordAuth is the password authentication stanza for AzureVaultV1.
+type AzureVaultV1PasswordAuth struct {
+	AppID    string `json:"appID"`
+	Password string `json:"password"`
 }

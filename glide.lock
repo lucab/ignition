@@ -1,5 +1,5 @@
 hash: 2ee306c2bc0856a853540457ee6b2cf3116f5fb51bd0d168dfa51d3af98cfed7
-updated: 2018-01-19T16:02:06.335643974Z
+updated: 2018-01-29T16:18:45.624118084Z
 imports:
 - name: github.com/ajeddeloh/go-json
   version: 73d058cf8437a1989030afe571eeab9f90eebbbd
@@ -38,7 +38,7 @@ imports:
   subpackages:
   - services/keyvault/2016-10-01/keyvault
 - name: github.com/Azure/go-autorest
-  version: 3c16bcd9ea019819c1d7c14055ed74f845f44a8a
+  version: c2a68353555b68de3ee8455a4fd3e890a0ac6d99
   subpackages:
   - autorest
   - autorest/adal
@@ -58,11 +58,11 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: dbeaa9332f19a944acb5736b4456cfcc02140e29
 - name: github.com/go-ini/ini
-  version: 12f418cc7edc5a618a51407b7ac1f1f512139df3
+  version: 32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a
 - name: github.com/godbus/dbus
-  version: a1b8ba5163b7f041b22761461eabd02b70d1f824
+  version: a389bdde4dd695d414e47b755e95e72b7826432c
 - name: github.com/jmespath/go-jmespath
-  version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
+  version: dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b
 - name: github.com/martinjungblut/cryptsetup
   version: b8e02b3798cd1d11c849e79d67ea83e23f86ab05
 - name: github.com/pin/tftp
@@ -78,7 +78,7 @@ imports:
   - rpcvmx
   - vmcheck
 - name: github.com/sirupsen/logrus
-  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
+  version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
 - name: github.com/vincent-petithory/dataurl
   version: 9a301d65acbb728fcc3ace14f45f511a4cfeea9c
 - name: github.com/vmware/vmw-guestinfo
@@ -90,7 +90,7 @@ imports:
 - name: github.com/vmware/vmw-ovflib
   version: 1f217b9dc714d5f340d0a3cc3e9d49255c536f68
 - name: gitlab.com/lucab/coreos-cryptagent
-  version: 9628a9f7d3671648f56f637b2796628404583965
+  version: 4140fe5e5f7c6166ad6649fa2ae6616b92de3fa8
   subpackages:
   - pkg/config
   - pkg/providers
@@ -99,8 +99,11 @@ imports:
   subpackages:
   - errorutil
 - name: golang.org/x/crypto
-  version: a7ead6ddf06233883deca151dffaef2effbf498f
+  version: 1875d0a70c90e57f11972aefd42276df65e895b9
+  repo: https://github.com/golang/crypto.git
+  vcs: git
   subpackages:
+  - pkcs12
   - ssh/terminal
 - name: golang.org/x/net
   version: 075e191f18186a8ff2becaf64478e30f4545cdad
@@ -108,9 +111,10 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: b44883b474ffefa37335017174e397412b633a4f
+  version: ff2a66f350cefa5c93a634eadb5d25bb60c85a9c
   subpackages:
   - unix
+  - windows
 testImports:
 - name: github.com/davecgh/go-spew
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9

@@ -27,7 +27,11 @@ import (
 )
 
 type content struct {
-	source string
+	source                 string
+	client                 *http.Client
+	responseHeadersTimeout int
+	totalTimeout           int
+	certAuths              []string
 }
 
 func contentFromConfigV1(cfg *config.ProviderJSON) (*content, error) {
@@ -45,13 +49,21 @@ func contentFromConfigV1(cfg *config.ProviderJSON) (*content, error) {
 
 	c := content{
 		source: value.Source,
+		client: nil,
+	}
+	if value.Timeouts != nil {
+		c.totalTimeout = value.Timeouts.HTTPTotal
+		c.responseHeadersTimeout = value.Timeouts.HTTPResponseHeaders
+	}
+	for _, ca := range value.CertificateAuthorities {
+		c.certAuths = append(c.certAuths, ca.Authority)
 	}
 
 	return &c, nil
 
 }
 
-func contentFromIgnitionV220(ks types.LuksKeyslot) (*content, error) {
+func contentFromIgnitionV220(ks types.LuksKeyslot, ign types.Ignition) (*content, error) {
 	if ks.Content == nil {
 		return nil, errors.New("nil Content keyslot")
 	}
@@ -73,8 +85,20 @@ func (c *content) GetCleartext(ctx context.Context, doneCh chan<- Result) {
 		doneCh <- Result{"", errors.New("missing source URL")}
 		return
 	}
-	logrus.Debugf("content: fetching from %s", c.source)
-	resp, err := http.Get(c.source)
+	logrus.Debugf("content: fetching from %s\n", c.source)
+
+	req, err := http.NewRequest("GET", c.source, nil)
+	if err != nil {
+		doneCh <- Result{"", err}
+		return
+	}
+	req = req.WithContext(ctx)
+
+	client := c.client
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		doneCh <- Result{"", err}
 		return
@@ -84,7 +108,7 @@ func (c *content) GetCleartext(ctx context.Context, doneCh chan<- Result) {
 		doneCh <- Result{"", fmt.Errorf("%s", resp.Status)}
 		return
 	}
-	logrus.Debugln("content: got positive response")
+	logrus.Debugf("content: got positive response\n")
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		doneCh <- Result{"", err}

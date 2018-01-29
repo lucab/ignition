@@ -23,7 +23,7 @@ import (
 )
 
 // Result represents the result of an async passphrase operation.
-// It contains either an Ok string resulr or an operational Err error.
+// It contains either an Ok string result or an operational Err error.
 type Result struct {
 	Ok  string
 	Err error
@@ -39,9 +39,9 @@ type PassProvider interface {
 	// SetCiphertext sets the ciphertext, so that it can be later serialized.
 	SetCiphertext(string)
 	// Encrypt encrypts an external cleartext.
-	Encrypt(ctx context.Context, cleartext string, doneCh chan<- Result)
 	// It may entail multiple calls to a remote provider in order
-	// to wrap/crypt the cleartext.
+	// to wrap/encrypt the cleartext.
+	Encrypt(ctx context.Context, cleartext string, doneCh chan<- Result)
 	ToProviderJSON() (*config.ProviderJSON, error)
 	// CanEncrypt signals whether the provider can encrypt external cleartext.
 	CanEncrypt() bool
@@ -49,14 +49,14 @@ type PassProvider interface {
 
 // FromIgnitionV220 constructs an opaque PassProvider from an ignition-2.2.0
 // keyslot configuration entry.
-func FromIgnitionV220(ks types.LuksKeyslot) (PassProvider, error) {
+func FromIgnitionV220(ks types.LuksKeyslot, ign types.Ignition) (PassProvider, error) {
 	switch {
 	case ks.AzureVault != nil:
 		return azureVaultFromIgnitionV220(ks)
 	case ks.Content != nil:
-		return contentFromIgnitionV220(ks)
+		return contentFromIgnitionV220(ks, ign)
 	case ks.HcVault != nil:
-		return nil, errors.New("unkwnown key")
+		return nil, errors.New("unknown keyslot provider")
 	}
 
 	return nil, errors.New("invalid keyslot")
@@ -74,8 +74,6 @@ func FromProviderJSON(cfg *config.ProviderJSON) (PassProvider, error) {
 		return azureVaultFromConfigV1(cfg)
 	case cfg.Kind == config.ProviderContentV1:
 		return contentFromConfigV1(cfg)
-	case cfg.Kind == config.ProviderHcVaultV1:
-		return nil, errors.New("unkwnown key")
 	}
 
 	return nil, errors.New("invalid provider")

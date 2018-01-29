@@ -14,6 +14,22 @@
 
 package config
 
+// ContentV1 is the v1 configuration for a generic remote content provider.
 type ContentV1 struct {
-	Source string `json:"source"`
+	Source   string             `json:"source"`
+	Timeouts *ContentV1Timeouts `json:"timeouts,omitempty"`
+	//TODO(lucab): specify this better
+	CertificateAuthorities []ContentV1CertAuth `json:"certificateAuthorities,omitempty"`
+}
+
+// ContentV1Timeouts records HTTPS client timeouts
+type ContentV1Timeouts struct {
+	HTTPResponseHeaders int `json:"httpResponseHeaders"`
+	HTTPTotal           int `json:"httpTotal"`
+}
+
+// ContentV1CertAuth records HTTPS client custom CAs
+type ContentV1CertAuth struct {
+	//TODO(lucab): store PEM here? Or just a path?
+	Authority string `json:"authority"`
 }
