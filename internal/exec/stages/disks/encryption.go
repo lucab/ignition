@@ -67,7 +67,7 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 	for _, encEntry := range encCfg {
 		encEntryCtx := context.WithValue(ctx, contextKey("volName"), encEntry.Name)
 		// TODO(lucab): consider running these in parallel (maybe?)
-		if err := s.createEncryptedEntry(encEntryCtx, encEntry); err != nil {
+		if err := s.createEncryptedEntry(encEntryCtx, encEntry, config.Ignition); err != nil {
 			return err
 		}
 	}
@@ -107,7 +107,7 @@ func (s stage) waitOnEntropyAvailable(ctx context.Context, tries int, pause int)
 }
 
 // createEncryptedEntry creates a single cryptsetup volume entry.
-func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encryption) error {
+func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encryption, ign types.Ignition) error {
 	escaped := unit.UnitNamePathEscape(encEntry.Device)
 	volumeDir := filepath.Join(configDir, escaped)
 	if err := os.MkdirAll(volumeDir, 0400); err != nil {
@@ -140,14 +140,14 @@ func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encrypti
 	// Fetch keyslots passphrases
 	keys := []string{}
 	for i, slot := range encEntry.KeySlots {
-		key, err := s.fetchKeyslotPass(ctx, slot)
+		key, err := s.fetchKeyslotPass(ctx, slot, ign)
 		if err != nil {
 			return fmt.Errorf("fetching keyslot passphrase %d for %s: %v", i, encEntry.Name, err)
 		}
 		fmt.Printf("fetched key %s\n", key)
 		keys = append(keys, key)
 		fmt.Printf("keys array: %#v\n", keys)
-		if err := s.recordSlotConfig(slot, i, key, volumeDir); err != nil {
+		if err := s.recordSlotConfig(slot, i, key, volumeDir, ign); err != nil {
 			return err
 		}
 		fmt.Printf("recorded key %s\n", key)
@@ -155,6 +155,7 @@ func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encrypti
 			return fmt.Errorf("error setting keyslot %d passphrase for %s: %v", i, encEntry.Name, err)
 		}
 		fmt.Printf("added key %s\n", key)
+
 		// TODO(lucab): remove when adding support for multiple keyslots
 		break
 	}
@@ -200,8 +201,8 @@ func (s stage) recordVolumeConfig(volConf *config.VolumeJSON, volumeDir string) 
 	return nil
 }
 
-func (s stage) recordSlotConfig(ks types.LuksKeyslot, index int, key string, volumeDir string) error {
-	slotConf, err := agentSlotProviderConfig(ks, key)
+func (s stage) recordSlotConfig(ks types.LuksKeyslot, index int, key string, volumeDir string, ign types.Ignition) error {
+	slotConf, err := agentSlotProviderConfig(ks, ign, key)
 	if err != nil {
 		return fmt.Errorf("failed to assemble slot config: %v", err)
 	}
@@ -223,22 +224,22 @@ func (s stage) recordSlotConfig(ks types.LuksKeyslot, index int, key string, vol
 }
 
 func agentVolumeConfig(e types.Encryption) (*config.VolumeJSON, error) {
-	cs := config.CryptsetupV1{
+	cs := config.CryptsetupLUKS1V1{
 		Name:           e.Name,
 		Device:         e.Device,
 		DisableDiscard: &e.DisableDiscard,
 	}
 
 	vol := config.VolumeJSON{
-		Kind:  config.VolumeCryptsetupV1,
+		Kind:  config.VolumeCryptsetupLUKS1V1,
 		Value: cs,
 	}
 
 	return &vol, nil
 }
 
-func agentSlotProviderConfig(l types.LuksKeyslot, key string) (*config.ProviderJSON, error) {
-	p, err := providers.FromIgnitionV220(l)
+func agentSlotProviderConfig(l types.LuksKeyslot, ign types.Ignition, key string) (*config.ProviderJSON, error) {
+	p, err := providers.FromIgnitionV220(l, ign)
 	if err != nil {
 		return nil, err
 	}
@@ -276,8 +277,8 @@ func (s stage) createEncryptedVolume(ctx context.Context, encEntry types.Encrypt
 	return device, nil
 }
 
-func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) (string, error) {
-	p, err := providers.FromIgnitionV220(keyslot)
+func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot, ign types.Ignition) (string, error) {
+	p, err := providers.FromIgnitionV220(keyslot, ign)
 	if err != nil {
 		return "", err
 	}

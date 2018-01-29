@@ -505,8 +505,8 @@ func (s stage) createCryptagentConfig(cfg types.Config) error {
 	s.Logger.PushPrefix("createCryptagentConfig")
 	defer s.Logger.PopPrefix()
 
-	if err := os.MkdirAll(config.ConfigDir, 0400); err != nil {
-		return fmt.Errorf("failed to create directory %s: %v", config.ConfigDir, err)
+	if err := os.MkdirAll(config.DevConfigDir, 0400); err != nil {
+		return fmt.Errorf("failed to create directory %s: %v", config.DevConfigDir, err)
 	}
 
 	var tempDir = filepath.Join(os.TempDir(), "ignition-cryptagent")
@@ -514,7 +514,7 @@ func (s stage) createCryptagentConfig(cfg types.Config) error {
 		_ = e
 		escaped := unit.UnitNamePathEscape(e.Device)
 		oldPath := filepath.Join(tempDir, escaped)
-		newPath := filepath.Join(config.ConfigDir, escaped)
+		newPath := filepath.Join(config.DevConfigDir, escaped)
 		if err := util.CopyDir(oldPath, newPath); err != nil {
 			return fmt.Errorf("failed to copy cryptagent configuration: %s", err)
 		}
