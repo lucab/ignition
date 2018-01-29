@@ -62,7 +62,7 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 	if err := s.waitOnDevicesAndCreateAliases(devs, "encryption"); err != nil {
 		return err
 	}
-	s.waitOnEntropyAvailable(256, 5, 5)
+	s.waitOnEntropyAvailable(256, 6, 10)
 
 	for _, encEntry := range encCfg {
 		encEntryCtx := context.WithValue(ctx, contextKey("volName"), encEntry.Name)
@@ -78,13 +78,15 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 func (s stage) waitOnEntropyAvailable(bytes int, tries int, pause int) {
 	avail := -1
 	for tries >= 0 {
-		if avail >= 0 && avail < bytes {
-			s.Logger.Info("Not enough entropy, retrying in %ds, currently available: %d", pause, avail)
+		if avail >= 0 && avail < 2 {
+			//			s.Logger.Info("Not enough entropy, retrying in %ds, currently available: %d", pause, avail)
+			s.Logger.Info("Waiting for crng_init, retrying in %ds, current status: %d", pause, avail)
 			time.Sleep(time.Duration(pause) * time.Second)
 		}
 		avail = 0
 		tries--
-		fp, err := os.Open("/proc/sys/kernel/random/entropy_avail")
+		//		fp, err := os.Open("/proc/sys/kernel/random/entropy_avail")
+		fp, err := os.Open("/proc/sys/kernel/random/crng_init")
 		if err != nil {
 			continue
 		}
@@ -98,8 +100,8 @@ func (s stage) waitOnEntropyAvailable(bytes int, tries int, pause int) {
 			continue
 		}
 		avail = n
-		if avail >= bytes {
-			s.Logger.Info("System has enough entropy (%d bytes), proceeding", avail)
+		if avail >= 2 {
+			s.Logger.Info("crng_init ok (status: %d), proceeding", avail)
 			break
 		}
 	}
