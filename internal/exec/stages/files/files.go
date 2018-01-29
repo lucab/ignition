@@ -511,13 +511,15 @@ func (s stage) createCryptagentConfig(cfg types.Config) error {
 
 	var tempDir = filepath.Join(os.TempDir(), "ignition-cryptagent")
 	for _, e := range cfg.Storage.Encryption {
-		// TODO(lucab): mv dir
 		_ = e
 		escaped := unit.UnitNamePathEscape(e.Device)
 		oldPath := filepath.Join(tempDir, escaped)
 		newPath := filepath.Join(config.ConfigDir, escaped)
-		if err := os.Rename(oldPath, newPath); err != nil {
-			return err
+		if err := util.CopyDir(oldPath, newPath); err != nil {
+			return fmt.Errorf("failed to copy cryptagent configuration: %s", err)
+		}
+		if err := os.RemoveAll(oldPath); err != nil {
+			return fmt.Errorf("failed to clean temporary cryptagent configuration: %s", err)
 		}
 	}
 

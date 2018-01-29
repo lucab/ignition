@@ -62,7 +62,7 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 	if err := s.waitOnDevicesAndCreateAliases(devs, "encryption"); err != nil {
 		return err
 	}
-	s.waitOnEntropyAvailable(256, 6, 10)
+	s.waitOnEntropyAvailable(ctx, 6, 10)
 
 	for _, encEntry := range encCfg {
 		encEntryCtx := context.WithValue(ctx, contextKey("volName"), encEntry.Name)
@@ -75,17 +75,15 @@ func (s stage) createEncryption(ctx context.Context, config types.Config) error 
 	return nil
 }
 
-func (s stage) waitOnEntropyAvailable(bytes int, tries int, pause int) {
+func (s stage) waitOnEntropyAvailable(ctx context.Context, tries int, pause int) {
 	avail := -1
 	for tries >= 0 {
 		if avail >= 0 && avail < 2 {
-			//			s.Logger.Info("Not enough entropy, retrying in %ds, currently available: %d", pause, avail)
 			s.Logger.Info("Waiting for crng_init, retrying in %ds, current status: %d", pause, avail)
 			time.Sleep(time.Duration(pause) * time.Second)
 		}
 		avail = 0
 		tries--
-		//		fp, err := os.Open("/proc/sys/kernel/random/entropy_avail")
 		fp, err := os.Open("/proc/sys/kernel/random/crng_init")
 		if err != nil {
 			continue
@@ -101,7 +99,7 @@ func (s stage) waitOnEntropyAvailable(bytes int, tries int, pause int) {
 		}
 		avail = n
 		if avail >= 2 {
-			s.Logger.Info("crng_init ok (status: %d), proceeding", avail)
+			s.Logger.Info("crng_init status %d, proceeding", avail)
 			break
 		}
 	}
@@ -120,9 +118,12 @@ func (s stage) createEncryptedEntry(ctx context.Context, encEntry types.Encrypti
 	cipherKind := "aes"
 	cipherMode := "xts-plain64"
 	params := cryptsetup.LUKSParams{
-		Hash:           cryptohashKind,
+		// User-configured crypto-hash
+		Hash: cryptohashKind,
+		// 0: auto-detect topology
 		Data_alignment: 0,
-		Data_device:    "",
+		// "": LUKS header on same device
+		Data_device: "",
 	}
 	volConf, err := agentVolumeConfig(encEntry)
 	if err != nil {
@@ -252,12 +253,22 @@ func agentSlotProviderConfig(l types.LuksKeyslot, key string) (*config.ProviderJ
 }
 
 func (s stage) createEncryptedVolume(ctx context.Context, encEntry types.Encryption, params cryptsetup.LUKSParams, cipherKind string, cipherMode string) (*cryptsetup.CryptDevice, error) {
+	// Auto-generate volume UUID
+	volUUID := ""
+	// Auto-generate volume key from RNG
+	volKey := ""
+	// Key length, in bytes
+	keyLen := 256 / 8
+
 	// Initialize device
 	err, device := cryptsetup.Init(encEntry.Device)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize cryptsetup on device %s: %v", encEntry.Device, err)
 	}
-	err = device.FormatLUKS(cipherKind, cipherMode, "", "", 256/8, params)
+
+	// Format volume
+	s.Logger.Info("Formatting encrypted volume %s, this may take a few moments")
+	err = device.FormatLUKS(cipherKind, cipherMode, volUUID, volKey, keyLen, params)
 	if err != nil {
 		return nil, fmt.Errorf("unable to format device %q for cryptsetup: %v", encEntry.Device, err)
 	}
@@ -272,8 +283,9 @@ func (s stage) fetchKeyslotPass(ctx context.Context, keyslot types.LuksKeyslot) 
 	}
 
 	if p.CanEncrypt() {
+		passLen := 63
 		var res providers.Result
-		pass, err := generateRandomASCIIString(63)
+		pass, err := generateRandomASCIIString(passLen)
 		if err != nil {
 			return "", err
 		}
